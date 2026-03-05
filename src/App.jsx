@@ -15,9 +15,8 @@ import Login from './pages/Auth/Login';
 function App() {
   const location = useLocation();
 
-  const noLayoutPages = ["/", "/login"];
   
-  const hideLayout = noLayoutPages.includes(location.pathname);
+  const hideLayout = location.pathname === "/" || location.pathname === "/login" || location.pathname.includes("login");
 
   return (
     <div className="flex h-screen w-full overflow-hidden" dir="rtl">
