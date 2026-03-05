@@ -1,13 +1,13 @@
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
-import { BrowserRouter } from 'react-router-dom'; // 1. استيراد الموزع
+import { HashRouter } from 'react-router-dom'; // تغيير الاستيراد هنا
 import './index.css'
 import App from './App.jsx'
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>
-    <BrowserRouter> {/* 2. تغليف التطبيق هنا */}
+    <HashRouter> {/* تغيير الموزع هنا */}
       <App />
-    </BrowserRouter>
+    </HashRouter>
   </StrictMode>,
 )
