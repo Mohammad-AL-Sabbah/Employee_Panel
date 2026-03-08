@@ -6,7 +6,6 @@ import {
 } from 'lucide-react';
 
 const Header = () => {
-  // جلب البيانات المخزنة من localStorage (التي وضعناها في صفحة Login)
   const storedName = localStorage.getItem("userName") || "User Name";
   
   const [currentTime, setCurrentTime] = useState(new Date());

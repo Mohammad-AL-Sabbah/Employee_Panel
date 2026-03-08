@@ -5,15 +5,23 @@
   color-scheme: light;
 }
 
+/* إخفاء السكرول بار وتنسيق الجسم */
 body {
   background-color: var(--bg-main);
   color: var(--text-main);
   transition: all 0.3s ease;
+  
+  /* إخفاء السكرول بار */
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+  overflow-x: hidden;
 }
-.custom-scrollbar::-webkit-scrollbar {
-  width: 6px;
+
+/* إخفاء السكرول بار لـ Chrome و Safari */
+body::-webkit-scrollbar {
+  display: none;
 }
-.custom-scrollbar::-webkit-scrollbar-thumb {
-  background: #cbd5e1;
-  border-radius: 10px;
+
+html {
+  scroll-behavior: smooth;
 }

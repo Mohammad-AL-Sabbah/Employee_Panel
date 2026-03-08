@@ -9,7 +9,7 @@ import {
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import * as XLSX from 'xlsx';
-import ReportsData from '../components/ReportsData';
+import ReportsData from '../../components/ReportsData';
 
 const Reports = () => {
   const [reports, setReports] = useState([]);

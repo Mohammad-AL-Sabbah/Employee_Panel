@@ -5,7 +5,7 @@ import {
   ArrowLeft, Clock, Info, CheckCircle, Zap,
   FileSearch, Users, MessageSquare, AlertTriangle 
 } from 'lucide-react';
-import ReportsData from '../components/ReportsData';
+import ReportsData from '../../components/ReportsData';
 
 
 const MainPage = () => {

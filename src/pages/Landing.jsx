@@ -66,6 +66,8 @@ const LandingPage = () => {
             <button onClick={() => scrollToSection('about')} className="hover:text-[#10b981] transition-colors cursor-pointer">من نحن؟</button>
             <button onClick={() => scrollToSection('features')} className="hover:text-[#10b981] transition-colors cursor-pointer font-bold">مزايا النظام</button>
             <button onClick={() => scrollToSection('how-it-works')} className="hover:text-[#10b981] transition-colors cursor-pointer">كيف يعمل النظام؟</button>
+            <Link to="/Kids" className="hover:text-[#10b981] transition-colors cursor-pointer">تعليم النظام للأطفال</Link>
+
           </div>
         </div>
 
