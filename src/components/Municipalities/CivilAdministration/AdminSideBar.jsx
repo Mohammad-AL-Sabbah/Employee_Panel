@@ -4,7 +4,7 @@ import { NavLink, Link } from 'react-router-dom'; // نستخدم NavLink بدل
 import { 
   LayoutGrid, AlertCircle, Users, CheckCircle, 
   Settings, HelpCircle, LogOut, ChevronLeft, ShieldCheck,
-  Home,Wrench
+  Home,Wrench,FileClock , UserCheck,LifeBuoy,Ticket
 } from 'lucide-react';
 
 // تحديث SidebarItem ليستخدم NavLink
@@ -59,9 +59,9 @@ const AdminSideBar = () => {
         <SidebarItem icon={AlertCircle} label="إدارة البلاغات" to="/reports" hasArrow />
         <SidebarItem icon={Wrench} label="فرق الصيانة" to="/teams" hasArrow />
         <SidebarItem icon={Users} label="المستخدمين" to="/users" hasArrow />
-        <SidebarItem icon={Users} label="سجلات الموظفين" to="/StaffLogs" hasArrow />
-        <SidebarItem icon={Users} label="حالة الموظفين" to="/StaffStatus" hasArrow />
-        <SidebarItem icon={Users} label="تذاكر الدعم" to="/SupportTickets" hasArrow />
+        <SidebarItem icon={FileClock} label="سجلات الموظفين" to="/StaffLogs" hasArrow />
+        <SidebarItem icon={UserCheck} label="حالة الموظفين" to="/StaffStatus" hasArrow />
+        <SidebarItem icon={Ticket} label="تذاكر الدعم" to="/SupportTickets" hasArrow />
 
         <SidebarItem icon={Settings} label="الإعدادات" to="/settings"  hasArrow/>
       </nav>
