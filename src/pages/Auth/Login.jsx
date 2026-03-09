@@ -1,3 +1,4 @@
+/* eslint-disable no-unused-vars */
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Lock, Mail, Eye, EyeOff, ShieldCheck, ArrowRight } from 'lucide-react';
@@ -24,11 +25,26 @@ const Login = () => {
       name: "محمد صباح"
     };
 
+    const mockSuperAdmin = {
+      email: "superadmin@psrs.ps",
+      password: "123",
+      name: "محمد الصباح"
+
+    };
+
     if (email === mockAdmin.email && password === mockAdmin.password) {
       localStorage.setItem("isLoggedIn", "true");
+      localStorage.setItem("userRole", "موظف"); 
       localStorage.setItem("userName", mockAdmin.name);
       navigate("/MainPage");
-    } else {
+    } 
+    else if (email === mockSuperAdmin.email && password === mockSuperAdmin.password) {
+      localStorage.setItem("isLoggedIn", "true");
+      localStorage.setItem("userRole", "مسؤول");
+      localStorage.setItem("userName", mockSuperAdmin.name);
+      navigate("/AdminControlPanel");
+    } 
+    else {
       setError("عذراً، البريد الإلكتروني أو كلمة المرور غير صحيحة!");
     }
   };
@@ -76,13 +92,13 @@ const Login = () => {
               </div>
             </div>
 
-            {/* كلمة المرور مع خيار "نسيت" */}
+            {/* كلمة المرور */}
             <div className="space-y-2">
               <div className="flex justify-between items-center px-2">
                 <label className="text-xs font-black text-slate-700">كلمة المرور</label>
                 <button 
                   type="button"
-                  onClick={() => alert("الرجاء مراجعة قسم تكنولوجيا المعلومات في البلدية لإعادة تعيين كلمة المرور.")}
+                  onClick={() => alert("الرجاء مراجعة قسم تكنولوجيا المعلومات في البلدية.")}
                   className="text-[10px] font-black text-emerald-600 hover:text-emerald-700 transition-colors cursor-pointer"
                 >
                   نسيت كلمة المرور؟
@@ -93,7 +109,7 @@ const Login = () => {
                 <input 
                   type={showPassword ? "text" : "password"} 
                   required
-                  placeholder="123"
+                  placeholder="••••••••"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   className="w-full bg-slate-50 border border-slate-200 rounded-2xl py-3.5 pr-12 pl-12 text-xs font-bold outline-none focus:border-emerald-500 focus:bg-white focus:ring-4 focus:ring-emerald-500/5 transition-all"

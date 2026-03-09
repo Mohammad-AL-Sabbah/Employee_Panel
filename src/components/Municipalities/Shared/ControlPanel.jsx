@@ -7,7 +7,7 @@ import {
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
-function Home() {
+function ControlPanel() {
   const [quotes, setQuotes] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -183,4 +183,4 @@ const QuickCard = ({ icon: Icon, label, to = "/", active = false }) => {
   );
 };
 
-export default Home;
+export default ControlPanel;

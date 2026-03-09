@@ -9,7 +9,7 @@ import {
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import * as XLSX from 'xlsx';
-import ReportsData from '../../components/ReportsData';
+import ReportsData from './ReportsData';
 
 const Reports = () => {
   const [reports, setReports] = useState([]);
@@ -101,7 +101,7 @@ const Reports = () => {
       <div className="mt-8 flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
         <div>
           <div className="flex items-center gap-2 text-slate-400 mb-2 text-xs font-bold">
-            <Link to="/home" className="hover:text-emerald-600 transition-colors">لوحة التحكم</Link>
+            <Link to="/ControlPanel" className="hover:text-emerald-600 transition-colors">لوحة التحكم</Link>
             <ChevronRight size={14} />
             <span className="text-slate-800">سجل البلاغات الكامل</span>
           </div>

@@ -7,6 +7,8 @@ import {
 
 const Header = () => {
   const storedName = localStorage.getItem("userName") || "User Name";
+  const storedRole = localStorage.getItem("userRole") || "user";
+
   
   const [currentTime, setCurrentTime] = useState(new Date());
   const [weather, setWeather] = useState({ temp: 18, desc: "صافٍ", icon: 'Clear' });
@@ -74,8 +76,8 @@ useEffect(() => {
             <p className="text-sm font-black text-slate-900 group-hover:text-emerald-600 transition-colors leading-tight">
               {storedName}
             </p>
-            <p className="text-[10px] text-slate-400 font-bold uppercase tracking-tighter">
-              موظف نظام PSRS
+            <p className="text-[10px] mt-1 text-slate-400 font-bold uppercase tracking-tighter">
+              {storedRole} نظام PSRS
             </p>
           </div>
           <ChevronDown size={14} className="text-slate-300 group-hover:text-slate-600 transition-colors" />
