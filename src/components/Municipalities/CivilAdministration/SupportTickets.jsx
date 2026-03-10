@@ -168,7 +168,8 @@ const SupportTickets = () => {
               <th className="p-6 text-[11px] font-black text-slate-400 uppercase tracking-widest text-center">الموضوع</th>
               <th className="p-6 text-[11px] font-black text-slate-400 uppercase tracking-widest text-center">التصنيف</th>
               <th className="p-6 text-[11px] font-black text-slate-400 uppercase tracking-widest text-center">الأولوية</th>
-              <th className="p-6 text-[11px] font-black text-slate-400 uppercase tracking-widest text-left">الإجراءات</th>
+              <th className="p-6 text-[11px] font-black text-slate-400 uppercase tracking-widest text-center">الحالة</th>
+              <th className="p-6 text-[11px] font-black text-slate-400 uppercase tracking-widest text-center">الإجراءات</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-50">
