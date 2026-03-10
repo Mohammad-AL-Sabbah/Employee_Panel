@@ -40,10 +40,10 @@ function AdminControlPanel() {
               <span>إجراءات سريعة </span>
             </div>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              <QuickCard icon={UserPlus} label="إضافة موظف" to="/admin/add" active />
+              <QuickCard icon={UserPlus} label="إضافة موظف" to="/ManageStaff" active />
               <QuickCard icon={History} label="سجلات الموظفين" to="/StaffLogs" />
               <QuickCard icon={Ticket} label="تذاكر الموظفين" to="/SupportTickets" />
-              <QuickCard icon={Users} label="إدارة الرتب" to="/admin/roles" />
+              <QuickCard icon={Users} label="إدارة الرتب" to="#" />
             </div>
           </div>
 
