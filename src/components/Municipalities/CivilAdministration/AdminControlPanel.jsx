@@ -3,7 +3,8 @@ import React, { useState, useEffect } from 'react';
 import { 
   Plus, MessageSquare, MapPin, AlertCircle, UserPlus,
   Clock, Bell, ChevronLeft, Users, Loader2, Search, 
-  ShieldCheck, History, LifeBuoy, UserMinus, CheckCircle
+  ShieldCheck, History, LifeBuoy, UserMinus, CheckCircle,
+  Ticket
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
@@ -25,7 +26,7 @@ function AdminControlPanel() {
       
       {/* رأس الصفحة الداخلي (نفس الـ Header الخاص بك) */}
       <div className="flex justify-between items-center mb-8">
-        <h2 className="text-2xl font-bold text-slate-800">لوحة الإدارة العليا والدعم الفني</h2>
+        <h2 className="text-2xl font-bold text-slate-800">لوحة الإدارة والدعم الفني</h2>
       </div>
 
       <div className="grid grid-cols-12 gap-8">
@@ -36,12 +37,12 @@ function AdminControlPanel() {
           <div className="space-y-4">
             <div className="flex items-center gap-2 text-slate-800 font-bold text-sm">
               <ShieldCheck size={16} className="text-emerald-600" />
-              <span>إجراءات المدير العام</span>
+              <span>إجراءات سريعة </span>
             </div>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               <QuickCard icon={UserPlus} label="إضافة موظف" to="/admin/add" active />
-              <QuickCard icon={History} label="سجل التدقيق" to="/admin/audit" />
-              <QuickCard icon={LifeBuoy} label="تذاكر الموظفين" to="/admin/tickets" />
+              <QuickCard icon={History} label="سجلات الموظفين" to="/StaffLogs" />
+              <QuickCard icon={Ticket} label="تذاكر الموظفين" to="/SupportTickets" />
               <QuickCard icon={Users} label="إدارة الرتب" to="/admin/roles" />
             </div>
           </div>
@@ -62,9 +63,9 @@ function AdminControlPanel() {
                   onChange={(e) => setSearchTerm(e.target.value)}
                 />
               </div>
-              <button className="text-emerald-600 text-xs font-bold hover:underline bg-emerald-50 px-3 py-1.5 rounded-lg transition-colors">
+              <Link to="/StaffStatus" className="text-emerald-600 text-xs font-bold hover:underline bg-emerald-50 px-3 py-1.5 rounded-lg transition-colors">
                 عرض كافة الطاقم
-              </button>
+              </Link>
             </div>
 
             <div className="space-y-4">
@@ -82,7 +83,7 @@ function AdminControlPanel() {
                         {member.name}
                       </p>
                       <p className="text-[11px] text-slate-400 mt-1.5 flex items-center gap-1">
-                        <span className="font-bold text-slate-500">الرتبة:</span> {member.role}
+                        <span className="font-bold text-slate-500">المسمى الوظيفي:</span> {member.role}
                       </p>
                     </div>
                   </div>
@@ -105,7 +106,7 @@ function AdminControlPanel() {
         <div className="col-span-12 lg:col-span-3 space-y-6">
           <div className="bg-white rounded-3xl p-6 border border-slate-200 shadow-sm hover:shadow-md transition-shadow">
             <div className="flex items-center gap-2 text-emerald-600 mb-5 font-bold text-xs uppercase tracking-tight">
-              <Clock size={16} /> حالة النظام العليا
+              <Clock size={16} /> حالة النظام 
             </div>
             <p className="text-2xl font-black text-slate-800 tracking-tighter mb-1">متصل الآن</p>
             <p className="text-slate-400 text-[11px]">جميع الخوادم تعمل بكفاءة</p>

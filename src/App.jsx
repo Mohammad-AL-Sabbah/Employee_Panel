@@ -18,6 +18,7 @@ import AdminSideBar from './components/Municipalities/CivilAdministration/AdminS
 import StaffLogs from './components/Municipalities/CivilAdministration/StaffLogs';
 import StaffStatus from './components/Municipalities/CivilAdministration/StaffStatus';
 import SupportTickets from './components/Municipalities/CivilAdministration/SupportTickets';
+import ManageStaff  from './components/Municipalities/CivilAdministration/ManageStaff';
 
 function App() {
   const location = useLocation();
@@ -61,6 +62,8 @@ function App() {
             <Route path='/StaffStatus' element={<StaffStatus />} />
             <Route path='/SupportTickets' element={<SupportTickets />} />
             
+            <Route path='/ManageStaff' element={<ManageStaff />} />
+
             {/* توجيه ذكي: إذا حاول الدخول لرابط غير موجود يرجعه للرئيسية */}
             <Route path="*" element={<Navigate to="/" />} />
           </Routes>

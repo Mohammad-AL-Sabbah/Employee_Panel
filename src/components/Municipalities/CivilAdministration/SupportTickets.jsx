@@ -93,20 +93,7 @@ const SupportTickets = () => {
           </p>
         </div>
         
-        <div className="flex gap-3">
-          <button 
-            onClick={exportToExcel} 
-            className={`
-              group flex items-center gap-2 px-6 py-3 rounded-2xl text-xs font-black transition-all duration-300 cursor-pointer relative z-30
-              ${selectedTickets.length > 0 
-                ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-200 border-transparent hover:bg-emerald-700' 
-                : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-900 hover:text-white hover:border-slate-900'}
-            `}
-          >
-            <Download size={16} className={selectedTickets.length > 0 ? 'text-white' : 'text-emerald-500 group-hover:text-white'} /> 
-            <span>{selectedTickets.length > 0 ? `تصدير المحدد (${selectedTickets.length})` : 'تصدير البيانات'}</span>
-          </button>
-        </div>
+    
       </div>
 
       {/* العدادات السريعة (Stats Cards) */}
@@ -126,6 +113,22 @@ const SupportTickets = () => {
           </div>
         ))}
       </div>
+
+    <div className=" gap-3 mb-5">
+          <button 
+            onClick={exportToExcel} 
+            className={`
+              group flex items-center gap-2 px-6 py-3 rounded-2xl text-xs font-black transition-all duration-300 cursor-pointer relative z-30
+              ${selectedTickets.length > 0 
+                ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-200 border-transparent hover:bg-emerald-700' 
+                : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-900 hover:text-white hover:border-slate-900'}
+            `}
+          >
+            <Download size={16} className={selectedTickets.length > 0 ? 'text-white' : 'text-emerald-500 group-hover:text-white'} /> 
+            <span>{selectedTickets.length > 0 ? `تصدير المحدد (${selectedTickets.length})` : 'تصدير البيانات'}</span>
+          </button>
+        </div>
+
 
       {/* منطقة البحث والفلترة */}
       <div className="bg-white/70 backdrop-blur-md p-4 rounded-[2rem] border border-white shadow-sm mb-6 flex items-center gap-4">

@@ -20,7 +20,6 @@ const Reports = () => {
   const [currentPage, setCurrentPage] = useState(1); 
   const reportsPerPage = 10; 
 
-  // --- ميزة التحديد الجديدة (بدون تغيير التصميم) ---
   const [selectedIds, setSelectedIds] = useState([]);
 
   useEffect(() => {
@@ -70,13 +69,20 @@ const Reports = () => {
     return sortOrder === "newest" ? b.id - a.id : a.id - b.id;
   });
 
+  // --- منطق الترقيم (Pagination Logic) ---
   const indexOfLastReport = currentPage * reportsPerPage;
   const indexOfFirstReport = indexOfLastReport - reportsPerPage;
   const currentReports = sortedReports.slice(indexOfFirstReport, indexOfLastReport);
   const totalPages = Math.ceil(sortedReports.length / reportsPerPage);
 
+  const paginate = (pageNumber) => {
+    if (pageNumber >= 1 && pageNumber <= totalPages) {
+      setCurrentPage(pageNumber);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  };
+
   const handleExportExcel = () => {
-    // التصدير بناءً على التحديد إذا وُجد، وإلا التصدير العادي
     const dataToProcess = selectedIds.length > 0 
       ? reports.filter(r => selectedIds.includes(r.id)) 
       : sortedReports;
@@ -120,7 +126,6 @@ const Reports = () => {
         </div>
       </div>
 
-      {/* البحث والفلترة - كما هي تماماً */}
       <div className="bg-white p-6 rounded-[2.5rem] border border-slate-100 shadow-sm mb-8 space-y-6">
         <div className="relative w-full">
           <Search className="absolute right-5 top-1/2 -translate-y-1/2 text-slate-400" size={20} />
@@ -157,77 +162,114 @@ const Reports = () => {
         </div>
       </div>
 
-      {/* الجدول - تمت إضافة عمود التحديد فقط */}
-      <div className="bg-white rounded-[2.5rem] border border-slate-100 shadow-xl overflow-hidden shadow-slate-200/50">
+      <div className="bg-white rounded-[2.5rem] border border-slate-100 shadow-xl overflow-hidden shadow-slate-200/50 mb-10">
         {loading ? (
           <div className="flex flex-col items-center justify-center py-40">
             <Loader2 className="animate-spin text-emerald-500 mb-4" size={48} />
             <p className="text-slate-500 font-bold">جاري تحميل سجل البلاغات...</p>
           </div>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-right border-collapse">
-              <thead>
-                <tr className="bg-slate-50/50 border-b border-slate-100">
-                  <th className="p-6 w-10"></th> {/* عمود التحديد */}
-                  <th className="p-6 text-sm font-black text-slate-600 uppercase">المعرف</th>
-                  <th className="p-6 text-sm font-black text-slate-600">تفاصيل البلاغ</th>
-                  <th className="p-6 text-sm font-black text-slate-600">المُبلغ</th>
-                  <th className="p-6 text-sm font-black text-slate-600">الحالة</th>
-                  <th className="p-6 text-sm font-black text-slate-600 text-center">الإجراءات</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-50">
-                {currentReports.map((report) => {
-                  const status = getStatus(report.id);
-                  const isSelected = selectedIds.includes(report.id);
-                  const StatusIcon = status.icon;
-                  return (
-                    <tr key={report.id} className="hover:bg-emerald-50/20 transition-all group">
-                      <td className="p-6">
-                        <button onClick={() => toggleSelect(report.id)} className="cursor-pointer text-slate-300 hover:text-emerald-600 transition-colors">
-                          {isSelected ? <CheckSquare size={20} className="text-emerald-600" /> : <Square size={20} />}
-                        </button>
-                      </td>
-                      <td className="p-6">
-                        <span className="font-mono font-bold text-emerald-600 bg-emerald-50 px-3 py-1.5 rounded-lg border border-emerald-100 shadow-sm">
-                           {report.id} #
-                        </span>
-                      </td>
-                      <td className="p-6 max-w-md">
-                        <p className="text-sm font-bold text-slate-800 leading-relaxed mb-1">{report.quote}</p>
-                        <div className="flex items-center gap-2 text-[10px] text-slate-400 font-bold">
-                          <Calendar size={10} /> 2 مارس 2026
-                        </div>
-                      </td>
-                      <td className="p-6 text-sm text-slate-600 font-medium">{report.author}</td>
-                      <td className="p-6">
-                        <div className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-[11px] font-black ${status.color}`}>
-                          <StatusIcon size={14} /> {status.label}
-                        </div>
-                      </td>
-                      <td className="p-6">
-                        <div className="flex justify-center gap-2">
-                          <button className="p-2.5 bg-blue-50 text-blue-600 rounded-xl hover:bg-blue-600 hover:text-white transition-all active:scale-90 shadow-sm border border-blue-100">
-                            <Eye size={16} />
+          <>
+            <div className="overflow-x-auto">
+              <table className="w-full text-right border-collapse">
+                <thead>
+                  <tr className="bg-slate-50/50 border-b border-slate-100">
+                    <th className="p-6 w-10"></th> 
+                    <th className="p-6 text-sm font-black text-slate-600 uppercase">المعرف</th>
+                    <th className="p-6 text-sm font-black text-slate-600">تفاصيل البلاغ</th>
+                    <th className="p-6 text-sm font-black text-slate-600">المُبلغ</th>
+                    <th className="p-6 text-sm font-black text-slate-600">الحالة</th>
+                    <th className="p-6 text-sm font-black text-slate-600 text-center">الإجراءات</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-50">
+                  {currentReports.map((report) => {
+                    const status = getStatus(report.id);
+                    const isSelected = selectedIds.includes(report.id);
+                    const StatusIcon = status.icon;
+                    return (
+                      <tr key={report.id} className="hover:bg-emerald-50/20 transition-all group">
+                        <td className="p-6">
+                          <button onClick={() => toggleSelect(report.id)} className="cursor-pointer text-slate-300 hover:text-emerald-600 transition-colors">
+                            {isSelected ? <CheckSquare size={20} className="text-emerald-600" /> : <Square size={20} />}
                           </button>
-                          <button className="p-2.5 bg-rose-50 text-rose-600 rounded-xl hover:bg-rose-600 hover:text-white transition-all active:scale-90 shadow-sm border border-rose-100">
-                            <Trash2 size={16} />
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-        )}
+                        </td>
+                        <td className="p-6">
+                          <span className="font-mono font-bold text-emerald-600 bg-emerald-50 px-3 py-1.5 rounded-lg border border-emerald-100 shadow-sm">
+                             {report.id} #
+                          </span>
+                        </td>
+                        <td className="p-6 max-w-md">
+                          <p className="text-sm font-bold text-slate-800 leading-relaxed mb-1">{report.quote}</p>
+                          <div className="flex items-center gap-2 text-[10px] text-slate-400 font-bold">
+                            <Calendar size={10} /> 2 مارس 2026
+                          </div>
+                        </td>
+                        <td className="p-6 text-sm text-slate-600 font-medium">{report.author}</td>
+                        <td className="p-6">
+                          <div className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-[11px] font-black ${status.color}`}>
+                            <StatusIcon size={14} /> {status.label}
+                          </div>
+                        </td>
+                        <td className="p-6">
+                          <div className="flex justify-center gap-2">
+                            <button className="p-2.5 bg-blue-50 text-blue-600 rounded-xl hover:bg-blue-600 hover:text-white transition-all active:scale-90 shadow-sm border border-blue-100">
+                              <Eye size={16} />
+                            </button>
+                            <button className="p-2.5 bg-rose-50 text-rose-600 rounded-xl hover:bg-rose-600 hover:text-white transition-all active:scale-90 shadow-sm border border-rose-100">
+                              <Trash2 size={16} />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
 
-        {/* الترقيم - كما هو تماماً */}
-        <div className="p-6 bg-slate-50/50 border-t border-slate-100 flex flex-col md:flex-row justify-between items-center gap-4">
-           {/* ... نفس كود الترقيم السابق ... */}
-        </div>
+            {/* قسم الترقيم المفعّل */}
+            <div className="p-6 bg-slate-50/50 border-t border-slate-100 flex flex-col md:flex-row justify-between items-center gap-4">
+              <div className="text-sm text-slate-500 font-bold">
+                عرض <span className="text-slate-800">{indexOfFirstReport + 1}</span> إلى <span className="text-slate-800">{Math.min(indexOfLastReport, sortedReports.length)}</span> من أصل <span className="text-slate-800">{sortedReports.length}</span> بلاغ
+              </div>
+              
+              <div className="flex items-center gap-2">
+                <button 
+                  onClick={() => paginate(currentPage - 1)}
+                  disabled={currentPage === 1}
+                  className="p-2 rounded-lg border border-slate-200 bg-white text-slate-600 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-slate-50 transition-all"
+                >
+                  <ChevronRight size={20} />
+                </button>
+                
+                <div className="flex items-center gap-1">
+                  {[...Array(totalPages)].map((_, index) => (
+                    <button
+                      key={index + 1}
+                      onClick={() => paginate(index + 1)}
+                      className={`w-10 h-10 rounded-lg text-sm font-black transition-all ${
+                        currentPage === index + 1 
+                        ? "bg-emerald-600 text-white shadow-lg shadow-emerald-200" 
+                        : "bg-white border border-slate-200 text-slate-600 hover:bg-slate-50"
+                      }`}
+                    >
+                      {index + 1}
+                    </button>
+                  ))}
+                </div>
+
+                <button 
+                  onClick={() => paginate(currentPage + 1)}
+                  disabled={currentPage === totalPages}
+                  className="p-2 rounded-lg border border-slate-200 bg-white text-slate-600 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-slate-50 transition-all"
+                >
+                  <ChevronLeft size={20} />
+                </button>
+              </div>
+            </div>
+          </>
+        )}
       </div>
     </div>
   );
