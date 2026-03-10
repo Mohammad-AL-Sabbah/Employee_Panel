@@ -165,9 +165,9 @@ const SupportTickets = () => {
             <tr className="bg-slate-50/50 border-b border-slate-100">
             
               <th className="p-6 text-[11px] font-black text-slate-400 uppercase tracking-widest">معلومات التذكرة</th>
+              <th className="p-6 text-[11px] font-black text-slate-400 uppercase tracking-widest text-center">الموضوع</th>
               <th className="p-6 text-[11px] font-black text-slate-400 uppercase tracking-widest text-center">التصنيف</th>
               <th className="p-6 text-[11px] font-black text-slate-400 uppercase tracking-widest text-center">الأولوية</th>
-              <th className="p-6 text-[11px] font-black text-slate-400 uppercase tracking-widest text-center">الحالة</th>
               <th className="p-6 text-[11px] font-black text-slate-400 uppercase tracking-widest text-left">الإجراءات</th>
             </tr>
           </thead>
@@ -213,7 +213,7 @@ const SupportTickets = () => {
                     <span className="text-[10px] font-black text-slate-700">{statusConfig[t.status].label}</span>
                   </div>
                 </td>
-                <td className="p-6 text-left" onClick={(e) => e.stopPropagation()}>
+                <td className="p-6 " onClick={(e) => e.stopPropagation()}>
                   <div className="flex items-center justify-end gap-2">
                     <button className="flex items-center gap-2 bg-white border border-slate-200 text-slate-800 px-4 py-2 rounded-xl text-[10px] font-black hover:border-slate-900 transition-all shadow-sm cursor-pointer">
                       عرض <ExternalLink size={14} />
