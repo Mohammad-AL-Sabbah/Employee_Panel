@@ -7,10 +7,10 @@ import {
   Ticket
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { toast } from 'sonner'; // استيراد السونر
 
 function AdminControlPanel() {
   const [searchTerm, setSearchTerm] = useState("");
-  // لنفترض أننا سنعرض الموظفين في المكان الذي كانت فيه الاقتباسات (Quotes)
   const [staff, setStaff] = useState([
     { id: 101, name: "أحمد محمد", role: "Admin", status: "نشط" },
     { id: 102, name: "سارة خالد", role: "Editor", status: "موقوف" },
@@ -19,12 +19,25 @@ function AdminControlPanel() {
 
   useEffect(() => {
     document.title = "لوحة الإدارة والدعم | P.S.R.S";
+    
+    // محاكاة تنبيه للمسؤول بوجود تذاكر دعم فني معلقة عند دخول الصفحة
+    const timer = setTimeout(() => {
+      toast.warning('تذكير: تذاكر دعم معلقة', {
+        description: 'يوجد 2 من موظفي الميدان يواجهون مشاكل تقنية حالياً.',
+        action: {
+          label: 'مراجعة الآن',
+          onClick: () => console.log('الذهاب لصفحة التذاكر')
+        },
+      });
+    }, 1500);
+
+    return () => clearTimeout(timer);
   }, []);
 
   return (
     <div className="p-8 w-full bg-transparent animate-in fade-in duration-500" dir="rtl">
       
-      {/* رأس الصفحة الداخلي (نفس الـ Header الخاص بك) */}
+      {/* رأس الصفحة الداخلي */}
       <div className="flex justify-between items-center mb-8">
         <h2 className="text-2xl font-bold text-slate-800">لوحة الإدارة والدعم الفني</h2>
       </div>
@@ -33,7 +46,7 @@ function AdminControlPanel() {
         {/* الجزء الأيمن الرئيسي */}
         <div className="col-span-12 lg:col-span-9 space-y-8">
           
-          {/* قسم الإجراءات السريعة - بنفس توزيع الكروت الخاصة بك */}
+          {/* قسم الإجراءات السريعة */}
           <div className="space-y-4">
             <div className="flex items-center gap-2 text-slate-800 font-bold text-sm">
               <ShieldCheck size={16} className="text-emerald-600" />
@@ -47,7 +60,7 @@ function AdminControlPanel() {
             </div>
           </div>
 
-          {/* قسم إدارة الموظفين - بديل قسم البلاغات في كودك */}
+          {/* قسم إدارة الموظفين */}
           <div className="bg-white rounded-[2.5rem] p-8 border border-slate-100 shadow-sm min-h-[450px]">
             <div className="flex justify-between items-center mb-8">
               <div>
@@ -59,7 +72,7 @@ function AdminControlPanel() {
                 <input 
                   type="text" 
                   placeholder="بحث عن موظف بالاسم أو الرقم..." 
-                  className="w-full bg-white border border-slate-200 rounded-xl py-2.5 pr-10 pl-4 text-xs outline-none focus:ring-2 focus:ring-emerald-500/10 focus:border-emerald-500 transition-all shadow-sm"
+                  className="w-full bg-white border border-slate-200 rounded-xl py-2.5 pr-10 pl-4 text-xs outline-none focus:ring-2 focus:ring-emerald-500/10 focus:border-emerald-500 transition-all shadow-sm text-right"
                   onChange={(e) => setSearchTerm(e.target.value)}
                 />
               </div>
@@ -69,7 +82,7 @@ function AdminControlPanel() {
             </div>
 
             <div className="space-y-4">
-              {staff.map((member) => (
+              {staff.filter(m => m.name.includes(searchTerm)).map((member) => (
                 <div 
                   key={member.id} 
                   className="flex justify-between items-center bg-slate-50/50 p-5 rounded-2xl border border-slate-100 hover:bg-white hover:shadow-xl hover:border-emerald-100 transition-all duration-300 cursor-pointer group"
@@ -102,7 +115,7 @@ function AdminControlPanel() {
           </div>
         </div>
 
-        {/* الجزء الأيسر الجانبي - مطابق تماماً لكودك */}
+        {/* الجزء الأيسر الجانبي */}
         <div className="col-span-12 lg:col-span-3 space-y-6">
           <div className="bg-white rounded-3xl p-6 border border-slate-200 shadow-sm hover:shadow-md transition-shadow">
             <div className="flex items-center gap-2 text-emerald-600 mb-5 font-bold text-xs uppercase tracking-tight">
@@ -118,7 +131,8 @@ function AdminControlPanel() {
               <span className="bg-red-500 text-white text-[10px] px-2 py-0.5 rounded font-bold animate-pulse">02</span>
             </div>
             <div className="space-y-6">
-              <div className="pr-4 border-r-2 border-red-500 text-right">
+              <div className="pr-4 border-r-2 border-red-500 text-right cursor-pointer hover:bg-slate-50 p-1 rounded-l transition-colors"
+                   onClick={() => toast.info('تفاصيل التذكرة', { description: 'الموظف سليم يبلغ عن تعطل ميزة تحديد المواقع في حي رفيديا.' })}>
                 <p className="text-[11px] font-bold text-slate-800">مشكلة في الخريطة</p>
                 <p className="text-[10px] text-slate-400 mt-1">مرسلة من: م. سليم</p>
               </div>
@@ -141,7 +155,7 @@ const QuickCard = ({ icon: Icon, label, to = "/", active = false }) => {
       <div className={`${active ? 'bg-white/20 text-white' : 'bg-emerald-50 text-emerald-600'} p-3.5 rounded-2xl transition-colors`}>
         <Icon size={22} />
       </div>
-      <span className="text-[11px] font-bold">{label}</span>
+      <span className="text-[11px] font-bold text-center">{label}</span>
     </Link>
   );
 };

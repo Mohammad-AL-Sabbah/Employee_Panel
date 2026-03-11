@@ -19,7 +19,8 @@ import StaffLogs from './components/Municipalities/CivilAdministration/StaffLogs
 import StaffStatus from './components/Municipalities/CivilAdministration/StaffStatus';
 import SupportTickets from './components/Municipalities/CivilAdministration/SupportTickets';
 import ManageStaff  from './components/Municipalities/CivilAdministration/ManageStaff';
-
+import { Toaster } from 'sonner';
+import EmergencyDashboard from './components/Emergency/components/EmergencyDashboard';
 function App() {
   const location = useLocation();
   
@@ -27,7 +28,7 @@ function App() {
   const userRole = localStorage.getItem("userRole");
 
   // 2. تحديد الصفحات التي لا يظهر فيها أي إطارات (Login, Landing, Kids)
-  const isAuthOrLanding = ["/", "/login", "/Kids"].includes(location.pathname);
+  const isAuthOrLanding = ["/", "/login", "/Kids","/EmergencyDashboard"].includes(location.pathname);
   
   // 3. التحقق مما إذا كان المستخدم الحالي هو Super Admin فعلاً
   const isSuperAdmin = userRole === "مسؤول";
@@ -44,7 +45,13 @@ function App() {
         
         {/* 5. الـ Header يظهر في كل الصفحات الداخلية (موظف ومدير) */}
         {!isAuthOrLanding && <Header />}
-
+<Toaster 
+        position="top-right" 
+        expand={true} 
+        richColors 
+        closeButton
+        theme="light" // أو dark حسب تصميمك
+      />
         <main className="flex-1 overflow-y-auto bg-[#f8fafc]">
           <Routes>
             <Route path="/" element={<LandingPage />} />
@@ -63,9 +70,9 @@ function App() {
             <Route path='/SupportTickets' element={<SupportTickets />} />
             
             <Route path='/ManageStaff' element={<ManageStaff />} />
+            <Route path='/EmergencyDashboard' element={<EmergencyDashboard />} />
 
             {/* توجيه ذكي: إذا حاول الدخول لرابط غير موجود يرجعه للرئيسية */}
-            <Route path="*" element={<Navigate to="/" />} />
           </Routes>
         </main>
       </div>
