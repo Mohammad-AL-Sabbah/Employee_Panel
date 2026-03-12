@@ -1,89 +1,108 @@
+/* eslint-disable no-unused-vars */
 import React, { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { ChevronRight, ChevronLeft } from 'lucide-react';
-// استيراد مكوناتك
+import { motion } from 'framer-motion';
+import { ChevronRight, ChevronLeft, Wind, Droplets, Eye } from 'lucide-react';
 import EmergencySidebar from './EmergencySidebar';
 import EmergencyMap from './EmergencyMap';
 import EmergencyHeader from './EmergencyHeader';
+import ConnectionAlert from './ConnectionAlert';
+import WeatherPanel from './WeatherPanel';
 
 const EmergencyDashboard = () => {
   const [isRightSidebarOpen, setIsRightSidebarOpen] = useState(true);
-  const [leftPanel, setLeftPanel] = useState('none');
   const [currentTime, setCurrentTime] = useState(new Date());
+  const [isOnline, setIsOnline] = useState(navigator.onLine);
+  
+  // --- حالة الربط بين الخريطة ولوحة الطقس ---
+  const [selectedLocation, setSelectedLocation] = useState(null);
 
   useEffect(() => {
-    const timer = setInterval(() => setCurrentTime(new Date()), 1000);
-    return () => clearInterval(timer);
+    document.title = "لوحة تحكم الطوارئ";
+    const icon = document.getElementById("icon");
+    if (icon) icon.href = "icon.png";
   }, []);
 
+  useEffect(() => {
+    // 1. تحديث الوقت كل ثانية
+    const timer = setInterval(() => setCurrentTime(new Date()), 1000);
+    
+    // 2. دالة تحديث حالة الإنترنت
+    const updateOnlineStatus = () => {
+      setIsOnline(navigator.onLine);
+    };
 
-const toggleFullScreen = () => {
-  if (!document.fullscreenElement) {
-    // الدخول في وضع الشاشة الكاملة
-    document.documentElement.requestFullscreen().catch((e) => {
-      console.error(`Error attempting to enable full-screen mode: ${e.message}`);
-    });
-  } else {
-    // الخروج من وضع الشاشة الكاملة
-    if (document.exitFullscreen) {
-      document.exitFullscreen();
+    // 3. مراقبة أحداث الشبكة
+    window.addEventListener('online', updateOnlineStatus);
+    window.addEventListener('offline', updateOnlineStatus);
+
+    if (navigator.connection) {
+      navigator.connection.addEventListener('change', updateOnlineStatus);
     }
-  }
-};
 
+    const statusInterval = setInterval(updateOnlineStatus, 1000);
 
+    return () => {
+      clearInterval(timer);
+      clearInterval(statusInterval);
+      window.removeEventListener('online', updateOnlineStatus);
+      window.removeEventListener('offline', updateOnlineStatus);
+      if (navigator.connection) {
+        navigator.connection.removeEventListener('change', updateOnlineStatus);
+      }
+    };
+  }, []);
 
   return (
     <div className="h-screen w-full bg-black text-slate-200 overflow-hidden flex flex-col font-mono" dir="rtl">
+      
+      {/* الهيدر العلوي */}
       <EmergencyHeader currentTime={currentTime} />
 
-      <div className="flex flex-1 overflow-hidden relative bg-black">
+      {/* تنبيه انقطاع الاتصال */}
+      <ConnectionAlert isDisconnected={!isOnline} />
+
+      <div className="flex flex-1 overflow-hidden relative">
         
-        {/* --- منطقة العمل المركزية (الخريطة + الألواح) --- */}
-        <main className="flex-1 flex relative z-0 overflow-hidden">
-          
-          {/* الخريطة: أزلنا أي Padding أو Margin لملء المساحة بالكامل */}
-          <div className="flex-1 relative bg-black z-0 border-r border-[#1e293b]">
-            <EmergencyMap />
-          </div>
-
-          {/* نظام الألواح اليسرى (VS Code Style) - ملتصق بالخريطة */}
-          <div className="flex h-full bg-[#050505] z-[80]">
-             {/* ... كود اللوحة اليسرى كما هو ... */}
-          </div>
-        </main>
-
-        {/* --- الـ Sidebar اليمين مع كبسة الفتح الذكية --- */}
-        <div className="relative flex z-[100]">
-          
-          {/* كبسة الفتح/الإغلاق: مثبتة دائماً على الحافة اليسرى للسيدبار */}
+        {/* 1. القائمة اليمنى (EmergencySidebar) */}
+        <div className="relative flex shrink-0 z-[100]">
           <button
             onClick={() => setIsRightSidebarOpen(!isRightSidebarOpen)}
-            className="absolute -left-4 top-1/2 -translate-y-1/2 w-4 h-20 bg-[#1e293b] hover:bg-blue-600 border border-l-0 border-[#334155] flex items-center justify-center cursor-pointer transition-colors z-[110] rounded-l-md shadow-lg"
-            title={isRightSidebarOpen ? "إغلاق القائمة" : "فتح القائمة"}
+            className="absolute -left-4 top-1/2 -translate-y-1/2 w-4 h-20 bg-[#1e293b] hover:bg-blue-600 border border-[#334155] flex items-center justify-center cursor-pointer z-[110] rounded-l-md transition-all group"
           >
-            {isRightSidebarOpen ? (
-              <ChevronRight size={14} className="text-white" />
-            ) : (
-              <ChevronLeft size={14} className="text-white" />
-            )}
+            {isRightSidebarOpen ? 
+              <ChevronRight size={14} className="text-white group-hover:scale-125 transition-transform" /> : 
+              <ChevronLeft size={14} className="text-white group-hover:scale-125 transition-transform" />
+            }
           </button>
 
-          {/* حاوية السيدبار مع أنيميشن سلس لضمان عدم وجود مسافات */}
           <motion.div 
-            initial={false}
             animate={{ width: isRightSidebarOpen ? 260 : 0 }}
-            transition={{ duration: 0.3, ease: "easeInOut" }}
-            className="overflow-hidden bg-black border-r border-[#1e293b]"
+            transition={{ duration: 0.4, ease: "circOut" }}
+            className="overflow-hidden bg-[#050505] border-l border-[#1e293b]"
           >
             <div className="w-[260px] h-full">
-              <EmergencySidebar isOpen={true} /> {/* نمرر true دائماً لأن الـ motion.div هو من يتحكم في العرض */}
+              <EmergencySidebar isOpen={true} />
             </div>
           </motion.div>
         </div>
 
+        {/* 2. منطقة الخريطة المركزية - الوسيط الرئيسي */}
+        <main className="flex-1 relative z-0 bg-black min-w-0 h-full">
+          <EmergencyMap 
+            onLocationSelect={(coords) => {
+              console.log("Dashboard: New Coordinates Received", coords);
+              setSelectedLocation(coords); // تخزين الإحداثيات في الأب
+            }} 
+            selectedCoords={selectedLocation} 
+          />
+        </main>
+
+        {/* 3. لوحة الطقس اليسرى - تستقبل البيانات عبر البروبس */}
+        <div className="z-[50] border-r border-[#1e293b]">
+           <WeatherPanel selectedCoords={selectedLocation} />
+        </div>
+
       </div>
-      
     </div>
   );
 };

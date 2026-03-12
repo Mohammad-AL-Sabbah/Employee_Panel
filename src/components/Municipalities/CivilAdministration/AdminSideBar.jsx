@@ -140,7 +140,7 @@ const AdminSideBar = () => {
 
       {/* التذييل */}
       <div className="mt-auto pt-4 border-t border-slate-100">
-        <SidebarItem icon={LogOut} label="تسجيل الخروج" to="/logout" danger />
+        <SidebarItem icon={LogOut} label="تسجيل الخروج" to="/" danger />
       </div>
     </aside>
   );

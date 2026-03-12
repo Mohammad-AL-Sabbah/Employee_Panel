@@ -17,7 +17,7 @@ const EmergencySidebar = ({ isOpen, onClose }) => {
   ];
 
   const handleLogout = () => {
-    window.location.href = "/login";
+    window.location.href = "/";
   };
 
   return (
@@ -62,16 +62,10 @@ const EmergencySidebar = ({ isOpen, onClose }) => {
                 className="w-full flex items-center justify-center gap-2 py-2 border border-[#1e293b] text-slate-400 bg-red-600 hover:bg-red-700 text-white hover:border-red-600 transition-all text-[11px] font-bold uppercase rounded"
               >
                 <LogOut size={14} />
-                <span>LogOut</span>
+                <span className="tracking-widest text-[15px]" >LogOut</span>
               </button>
 
-              <div className="flex items-center justify-between pt-2 border-t border-[#1e293b]/50">
-                <div className="flex flex-col">
-                  <span className="text-[10px] text-white font-black uppercase">Admin_Root</span>
-                  <span className="text-[8px] text-slate-600">ID: 00-142-X</span>
-                </div>
-                <button onClick={onClose} className="p-1 border border-slate-800 hover:bg-[#111]"><ChevronLeft size={16} className="text-slate-500" /></button>
-              </div>
+          
             </div>
           </div>
         </div>
@@ -81,17 +75,19 @@ const EmergencySidebar = ({ isOpen, onClose }) => {
       {showExitConfirm && (
         <div className="fixed inset-0 z-[10000] flex items-center justify-center bg-black/60 backdrop-blur-[2px] p-4 font-mono">
           <div className="w-80 bg-[#0f172a] border border-[#1e293b] shadow-2xl p-6 rounded-lg text-center">
-            <h3 className="text-white text-sm font-bold mb-2">تأكيد الخروج</h3>
+            <h3 className="text-white text-sm font-bold mb-2" >تأكيد الخروج</h3>
             <p className="text-slate-400 text-xs mb-6">هل أنت متأكد من رغبتك في تسجيل الخروج من النظام؟</p>
             
             <div className="flex gap-3">
               <button 
+              style={{cursor:'pointer'}}
                 onClick={() => setShowExitConfirm(false)}
                 className="flex-1 py-2 bg-[#1e293b] text-slate-300 hover:text-white rounded text-xs transition-colors"
               >
                 إلغاء
               </button>
               <button 
+              style={{cursor:'pointer'}}
                 onClick={handleLogout}
                 className="flex-1 py-2 bg-red-600 text-white rounded text-xs font-bold hover:bg-red-700 transition-colors"
               >

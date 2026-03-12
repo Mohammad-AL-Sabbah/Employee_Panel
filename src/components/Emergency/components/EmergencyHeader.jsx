@@ -3,6 +3,48 @@ import { ShieldAlert, Activity, Lock, Zap, Maximize, Minimize } from 'lucide-rea
 
 const EmergencyHeader = ({ currentTime }) => {
   const [isFullScreen, setIsFullScreen] = useState(false);
+  const [connectionStrength, setConnectionStrength] = useState(4); // الافتراضي 4 أشرطة
+
+  // --- منطق إشارة الشبكة الديناميكي ---
+  useEffect(() => {
+    const updateStatus = () => {
+      // الوصول إلى معلومات الشبكة في المتصفح
+      const nav = navigator.connection || navigator.mozConnection || navigator.webkitConnection;
+      
+      if (!navigator.onLine) {
+        setConnectionStrength(0); // لا يوجد إنترنت
+        return;
+      }
+
+      if (nav) {
+        // تحديد القوة بناءً على نوع الشبكة (4g, 3g, etc) وزمن الاستجابة
+        if (nav.effectiveType === '4g' && nav.rtt < 100) setConnectionStrength(5);
+        else if (nav.effectiveType === '4g') setConnectionStrength(4);
+        else if (nav.effectiveType === '3g') setConnectionStrength(3);
+        else setConnectionStrength(2);
+      } else {
+        // في حال عدم دعم المتصفح لـ Network Information API
+        setConnectionStrength(navigator.onLine ? 5 : 0);
+      }
+    };
+
+    // مراقبة التغييرات في الاتصال
+    window.addEventListener('online', updateStatus);
+    window.addEventListener('offline', updateStatus);
+    if (navigator.connection) {
+      navigator.connection.addEventListener('change', updateStatus);
+    }
+
+    updateStatus(); // تشغيل فوري عند التحميل
+
+    return () => {
+      window.removeEventListener('online', updateStatus);
+      window.removeEventListener('offline', updateStatus);
+      if (navigator.connection) {
+        navigator.connection.removeEventListener('change', updateStatus);
+      }
+    };
+  }, []);
 
   // دالة التحكم في ملء الشاشة
   const toggleFullScreen = () => {
@@ -21,7 +63,7 @@ const EmergencyHeader = ({ currentTime }) => {
     }
   };
 
-  // مراقبة التغيير في وضع الشاشة (في حال ضغط المستخدم Esc)
+  // مراقبة التغيير في وضع الشاشة (Esc key)
   useEffect(() => {
     const handler = () => setIsFullScreen(!!document.fullscreenElement);
     document.addEventListener('fullscreenchange', handler);
@@ -31,7 +73,7 @@ const EmergencyHeader = ({ currentTime }) => {
   return (
     <header className="h-14 bg-black border-b-2 border-[#1e293b] flex items-center justify-between px-4 z-[100] font-mono select-none">
       
-      {/* القسم الأيمن: المعرفات الرقمية (نظام الـ CAD) */}
+      {/* القسم الأيمن: المعرفات الرقمية */}
       <div className="flex items-center gap-6">
         <div className="flex items-center gap-3 border-l-4 border-blue-600 bg-blue-950/20 px-3 py-1">
           <ShieldAlert size={18} className="text-blue-500" />
@@ -67,17 +109,14 @@ const EmergencyHeader = ({ currentTime }) => {
         <div className="h-[2px] w-12 bg-gradient-to-l from-transparent to-blue-900"></div>
       </div>
 
-      {/* القسم الأيسر: عداد الوقت والتحكم بالواجهة */}
       <div className="flex items-center gap-4">
-        {/* التوقيت العسكري */}
         <div className="bg-[#111] border border-slate-800 px-4 py-1 rounded flex flex-col items-center min-w-[120px]">
-          <span className="text-[9px] text-slate-500 font-bold tracking-[0.2em] mb-0.5">ZULU_TIME</span>
+          <span className="text-[15px] text-slate-500 font-bold tracking-[0.2em] mb-0.5">الوقت الحالي</span>
           <span className="text-xl font-black text-blue-500 leading-none tracking-tighter tabular-nums">
             {currentTime.toLocaleTimeString('en-GB', { hour12: false })}
           </span>
         </div>
 
-        {/* زر ملء الشاشة (التحديث الجديد) */}
         <button 
           onClick={toggleFullScreen}
           className={`p-2 border transition-all flex flex-col items-center gap-0.5 group ${
@@ -89,13 +128,23 @@ const EmergencyHeader = ({ currentTime }) => {
           <span className="text-[7px] font-black tracking-tighter uppercase">Full Screen</span>
         </button>
 
-        <div className="flex flex-col gap-1">
+        {/* القسم المحدث: Signal Strength */}
+        <div className="flex flex-col gap-1 min-w-[65px]">
             <div className="flex gap-0.5">
                 {[...Array(5)].map((_, i) => (
-                    <div key={i} className={`w-3 h-1 ${i < 4 ? 'bg-blue-600' : 'bg-slate-800'}`}></div>
+                    <div 
+                      key={i} 
+                      className={`w-3 h-1 transition-all duration-500 ${
+                        i < connectionStrength 
+                          ? (connectionStrength <= 1 ? 'bg-red-600 animate-pulse' : 'bg-blue-600') 
+                          : 'bg-slate-800'
+                      }`}
+                    ></div>
                 ))}
             </div>
-            <span className="text-[8px] text-slate-500 font-bold text-left uppercase">Signal</span>
+            <span className={`text-[8px] font-bold text-left uppercase ${connectionStrength <= 1 ? 'text-red-500' : 'text-slate-500'}`}>
+              {connectionStrength === 0 ? 'No Signal' : 'Signal'}
+            </span>
         </div>
 
         <button className="ml-2 p-2 hover:bg-red-950/30 text-slate-600 hover:text-red-500 border border-transparent hover:border-red-900/50 transition-all">
