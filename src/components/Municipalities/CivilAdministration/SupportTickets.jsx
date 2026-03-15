@@ -7,7 +7,7 @@ import {
   User, Tag, RotateCcw, ChevronLeft, ChevronRight,
   ExternalLink, Circle, Mail, CheckSquare, Square
 } from 'lucide-react';
-import ticketNotify  from '../../../utils/Notifier'; 
+import { TicketNotify }  from '../../../utils/Notifier'; 
 
 const SupportTickets = () => {
   const [searchTerm, setSearchTerm] = useState("");
@@ -28,7 +28,7 @@ const SupportTickets = () => {
     // البحث عن أول تذكرة عاجلة لإظهار تنبيه لها عند دخول الصفحة
     const urgentTicket = tickets.find(t => t.priority === 'high' && t.status !== 'closed');
     if (urgentTicket) {
-      ticketNotify(urgentTicket.priority, urgentTicket.subject, urgentTicket.id);
+      TicketNotify (urgentTicket.priority, urgentTicket.subject, urgentTicket.id);
     }
   }, []); // يعمل عند التحميل الأول فقط
 
@@ -218,7 +218,7 @@ const SupportTickets = () => {
                   <td className="p-6 " onClick={(e) => e.stopPropagation()}>
                     <div className="flex items-center justify-end gap-2">
                       <button 
-                        onClick={() => ticketNotify(t.priority, t.subject, t.id)}
+                        onClick={() => TicketNotify(t.priority, t.subject, t.id)}
                         className="flex items-center gap-2 bg-white border border-slate-200 text-slate-800 px-4 py-2 rounded-xl text-[10px] font-black hover:border-slate-900 transition-all shadow-sm cursor-pointer"
                       >
                         عرض <ExternalLink size={14} />
@@ -228,6 +228,8 @@ const SupportTickets = () => {
                       </button>
                     </div>
                   </td>
+
+                    
                 </tr>
               ))}
             </tbody>
