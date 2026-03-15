@@ -39,7 +39,7 @@ const WeatherPanel = ({ selectedCoords, onResetCoords }) => {
 
   useEffect(() => {
     if (selectedCoords) {
-      fetchWeather(selectedCoords.lat, selectedCoords.lon, "إحداثيات جغرافية");
+      fetchWeather(selectedCoords.lat, selectedCoords.lon, "درجة الحرارة ");
     }
   }, [selectedCoords]);
 

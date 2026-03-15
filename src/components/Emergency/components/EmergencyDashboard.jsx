@@ -1,7 +1,7 @@
 /* eslint-disable no-unused-vars */
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { ChevronRight, ChevronLeft, Wind, Droplets, Eye } from 'lucide-react';
+import { ChevronRight, ChevronLeft } from 'lucide-react';
 import EmergencySidebar from './EmergencySidebar';
 import EmergencyMap from './EmergencyMap';
 import EmergencyHeader from './EmergencyHeader';
@@ -10,53 +10,33 @@ import WeatherPanel from './WeatherPanel';
 
 const EmergencyDashboard = () => {
   const [isRightSidebarOpen, setIsRightSidebarOpen] = useState(true);
-  const [currentTime, setCurrentTime] = useState(new Date());
   const [isOnline, setIsOnline] = useState(navigator.onLine);
-  
-  // --- حالة الربط بين الخريطة ولوحة الطقس ---
   const [selectedLocation, setSelectedLocation] = useState(null);
 
   useEffect(() => {
     document.title = "لوحة تحكم الطوارئ";
-    const icon = document.getElementById("icon");
-    if (icon) icon.href = "icon.png";
-  }, []);
-
-  useEffect(() => {
-    // 1. تحديث الوقت كل ثانية
-    const timer = setInterval(() => setCurrentTime(new Date()), 1000);
     
-    // 2. دالة تحديث حالة الإنترنت
-    const updateOnlineStatus = () => {
-      setIsOnline(navigator.onLine);
-    };
+    
+    const updateOnlineStatus = () => setIsOnline(navigator.onLine);
 
-    // 3. مراقبة أحداث الشبكة
     window.addEventListener('online', updateOnlineStatus);
     window.addEventListener('offline', updateOnlineStatus);
 
-    if (navigator.connection) {
-      navigator.connection.addEventListener('change', updateOnlineStatus);
-    }
-
-    const statusInterval = setInterval(updateOnlineStatus, 1000);
-
     return () => {
-      clearInterval(timer);
-      clearInterval(statusInterval);
       window.removeEventListener('online', updateOnlineStatus);
       window.removeEventListener('offline', updateOnlineStatus);
-      if (navigator.connection) {
-        navigator.connection.removeEventListener('change', updateOnlineStatus);
-      }
     };
   }, []);
 
+  const Icon = useEffect(()=>{
+const image = document.getElementById("icon");
+image .src = "/icon.png";
+  },[]);
   return (
     <div className="h-screen w-full bg-black text-slate-200 overflow-hidden flex flex-col font-mono" dir="rtl">
       
       {/* الهيدر العلوي */}
-      <EmergencyHeader currentTime={currentTime} />
+      <EmergencyHeader />
 
       {/* تنبيه انقطاع الاتصال */}
       <ConnectionAlert isDisconnected={!isOnline} />
@@ -86,18 +66,15 @@ const EmergencyDashboard = () => {
           </motion.div>
         </div>
 
-        {/* 2. منطقة الخريطة المركزية - الوسيط الرئيسي */}
+        {/* 2. منطقة الخريطة المركزية */}
         <main className="flex-1 relative z-0 bg-black min-w-0 h-full">
           <EmergencyMap 
-            onLocationSelect={(coords) => {
-              console.log("Dashboard: New Coordinates Received", coords);
-              setSelectedLocation(coords); // تخزين الإحداثيات في الأب
-            }} 
+            onLocationSelect={(coords) => setSelectedLocation(coords)} 
             selectedCoords={selectedLocation} 
           />
         </main>
 
-        {/* 3. لوحة الطقس اليسرى - تستقبل البيانات عبر البروبس */}
+        {/* 3. لوحة الطقس اليسرى */}
         <div className="z-[50] border-r border-[#1e293b]">
            <WeatherPanel selectedCoords={selectedLocation} />
         </div>
