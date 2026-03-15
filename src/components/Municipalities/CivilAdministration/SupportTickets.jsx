@@ -7,7 +7,7 @@ import {
   User, Tag, RotateCcw, ChevronLeft, ChevronRight,
   ExternalLink, Circle, Mail, CheckSquare, Square
 } from 'lucide-react';
-import { ticketNotify } from '../../../utils/Notifier.jsx'; // استيراد المحرك الذي أنشأناه
+import ticketNotify  from '../../../utils/Notifier'; 
 
 const SupportTickets = () => {
   const [searchTerm, setSearchTerm] = useState("");
