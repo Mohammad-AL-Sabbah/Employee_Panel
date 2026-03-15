@@ -4,8 +4,10 @@ import { createBrowserRouter, Navigate } from 'react-router-dom';
 import App from '../App'; 
 
 // 1. استيراد القوالب (Layouts)
-import MainLayout from '../layouts/MainLayout'; 
-import EmergencyLayout from '../layouts/EmergencyLayout';
+import MainLayout from '../Layouts/MainLayout'; 
+
+
+import EmergencyLayout from '../Layouts/EmergencyLayout';
 
 // 2. استيراد الصفحات العامة
 import LandingPage from '../pages/Landing';

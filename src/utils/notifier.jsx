@@ -1,6 +1,6 @@
 import { toast } from 'sonner';
 
-export const ticketNotify = (priority, subject, id) => {
+export const TicketNotify = (priority, subject, id) => {
   if (priority === 'low') return;
 
   const isHigh = priority === 'high';
