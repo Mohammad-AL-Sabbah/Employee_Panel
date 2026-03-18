@@ -5,7 +5,7 @@ import {
   LayoutDashboard, Map as MapIcon, FileText,
   Radio, History, Activity, LogOut, ShieldCheck,
   ChevronDown, MessageSquare, Phone,
-  Ambulance, Hospital, Home 
+  Ambulance, Hospital, Home // أيقونات جديدة لوحدات الطوارئ
 } from 'lucide-react';
 
 const EmergencySidebar = ({ isOpen }) => {
@@ -34,7 +34,7 @@ const EmergencySidebar = ({ isOpen }) => {
       isDropdown: true,
       subLinks: [
         { name: 'الوحدات الميدانية', path: '/FieldUnitsView', icon: <Ambulance size={16} /> },
-        { name: 'المراكز الطبية والمستشفيات', path: '/MedicalCentersView', icon: <Hospital size={16} /> },
+        { name: 'المراكز الطبية والمستشفيات', path: '/hospitals', icon: <Hospital size={16} /> },
         { name: 'مراكز الإيواء ', path: '/shelters', icon: <Home size={16} /> },
       ]
     },
