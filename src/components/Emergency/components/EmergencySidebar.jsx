@@ -15,8 +15,22 @@ const EmergencySidebar = ({ isOpen }) => {
 
   const navLinks = [
     { id: '01', path: '/EmergencyDashboard', name: 'الرئيسية', icon: <LayoutDashboard size={22} /> },
-    { id: '02', path: '/map', name: 'خريطة البلاغات', icon: <MapIcon size={22} /> },
+
     { 
+      id: '04', 
+      name: 'وحدات الطوارئ', 
+      icon: <Activity size={22} />,
+      isDropdown: true,
+      subLinks: [
+        { name: 'الوحدات الميدانية', path: '/FieldUnitsView', icon: <Ambulance size={16} /> },
+        { name: 'المراكز الطبية والمستشفيات', path: '/hospitals', icon: <Hospital size={16} /> },
+        { name: 'مراكز الإيواء ', path: '/shelters', icon: <Home size={16} /> },
+      ]
+    },
+        { id: '02', path: '/EmergencyCenters', name: 'مراكز الطوارئ', icon: <MapIcon size={22} /> },
+
+    { id: '05', path: '/MedicalHistoryView', name: 'السجل الطبي العام', icon: <Activity size={22} className="text-red-500" /> },
+        { 
       id: '03', 
       name: 'مركز الأرشيف', 
       icon: <FileText size={22} />,
@@ -27,19 +41,7 @@ const EmergencySidebar = ({ isOpen }) => {
         { name: 'الأرشيف العام', path: '/archive', icon: <History size={16} /> },
       ]
     },
-    { 
-      id: '04', // تصحيح الـ ID ليكون فريداً
-      name: 'وحدات الطوارئ', 
-      icon: <Activity size={22} />,
-      isDropdown: true,
-      subLinks: [
-        { name: 'الوحدات الميدانية', path: '/FieldUnitsView', icon: <Ambulance size={16} /> },
-        { name: 'المراكز الطبية والمستشفيات', path: '/hospitals', icon: <Hospital size={16} /> },
-        { name: 'مراكز الإيواء ', path: '/shelters', icon: <Home size={16} /> },
-      ]
-    },
-    { id: '05', path: '/MedicalHistoryView', name: 'السجل الطبي العام', icon: <Activity size={22} className="text-red-500" /> },
-    { id: '06', path: '/ops-room', name: 'غرفة العمليات', icon: <Radio size={22} /> },
+    { id: '06', path: '/EmergencyStaffStatus', name: 'حالة الموظفين', icon: <Radio size={22} /> },
   ];
 
   useEffect(() => {
@@ -54,7 +56,7 @@ const EmergencySidebar = ({ isOpen }) => {
   }, [location.pathname]);
 
   const handleLogout = () => {
-    window.location.href = "/";
+    window.location.href = "/EmergencyLogin";
   };
 
   const toggleSubMenu = (id) => {
@@ -163,6 +165,7 @@ const EmergencySidebar = ({ isOpen }) => {
           <div className="p-4 bg-[#0a0a0a] border-t border-slate-800">
             <button 
               onClick={() => setShowExitConfirm(true)}
+        style={{cursor:"pointer"}}
               className="w-full flex items-center justify-center gap-3 py-3 bg-slate-900 text-slate-300 hover:bg-red-600 hover:text-white transition-all rounded-xl font-bold text-[14px]"
             >
               <LogOut size={18} />
@@ -178,8 +181,10 @@ const EmergencySidebar = ({ isOpen }) => {
             <h3 className="text-white text-xl font-bold mb-2">تأكيد الخروج</h3>
             <p className="text-slate-400 text-sm mb-8 font-medium">سيتم إنهاء الجلسة الحالية وإيقاف المتابعة.</p>
             <div className="flex gap-3">
-              <button onClick={() => setShowExitConfirm(false)} className="flex-1 py-3 bg-slate-800 text-white rounded-xl font-bold hover:bg-slate-700 transition-all">تراجع</button>
-              <button onClick={handleLogout} className="flex-1 py-3 bg-red-600 text-white rounded-xl font-bold hover:bg-red-700 transition-all">خروج</button>
+              <button         style={{cursor:"pointer"}}
+ onClick={() => setShowExitConfirm(false)} className="flex-1 py-3 bg-slate-800 text-white rounded-xl font-bold hover:bg-slate-700 transition-all">تراجع</button>
+              <button         style={{cursor:"pointer"}}
+ onClick={handleLogout} className="flex-1 py-3 bg-red-600 text-white rounded-xl font-bold hover:bg-red-700 transition-all">خروج</button>
             </div>
           </div>
         </div>

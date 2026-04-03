@@ -1,7 +1,7 @@
 /* eslint-disable no-unused-vars */
 import React, { useState, useEffect } from 'react';
 import { MapContainer, TileLayer, Marker, useMap, Popup, Circle } from 'react-leaflet';
-import { Search, MapPin, X, Navigation2, Loader2 } from 'lucide-react'; 
+import { Search, MapPin, X, Navigation2, Loader2, Plus, Minus, Maximize } from 'lucide-react'; 
 import L from 'leaflet';
 
 // --- حل مشكلة اختفاء الأيقونات الافتراضية بعد الرفع ---
@@ -15,8 +15,8 @@ L.Icon.Default.mergeOptions({
     iconRetinaUrl: markerIcon2x,
     shadowUrl: markerShadow,
 });
-// ---------------------------------------------------
 
+// --- مكون التحكم بالخريطة (Handler) ---
 const MapHandler = ({ target }) => {
   const map = useMap();
   useEffect(() => {
@@ -25,6 +25,52 @@ const MapHandler = ({ target }) => {
     }
   }, [target, map]);
   return null;
+};
+
+// --- أزرار التحكم العائمة المخصصة ---
+const CustomZoomControls = ({ target }) => {
+  const map = useMap();
+
+  const handleZoomIn = () => map.zoomIn();
+  const handleZoomOut = () => map.zoomOut();
+  const handleReset = () => {
+    if (target) {
+      map.flyTo([target.lat, target.lon], 15);
+    } else {
+      map.flyTo([31.9, 35.2], 9);
+    }
+  };
+
+  return (
+    <div className="absolute bottom-10 right-8 z-[4000] flex flex-col gap-3">
+      {/* زر التكبير */}
+      <button 
+        onClick={handleZoomIn}
+        className="p-3 bg-slate-900/60 backdrop-blur-xl border border-white/10 rounded-xl text-white hover:bg-indigo-600 hover:border-indigo-400 transition-all shadow-2xl group"
+        title="تكبير"
+      >
+        <Plus size={20} className="group-hover:scale-110 transition-transform" />
+      </button>
+
+      {/* زر التصغير (حل مشكلة الماوس باد) */}
+      <button 
+        onClick={handleZoomOut}
+        className="p-3 bg-slate-900/60 backdrop-blur-xl border border-white/10 rounded-xl text-white hover:bg-indigo-600 hover:border-indigo-400 transition-all shadow-2xl group"
+        title="تصغير"
+      >
+        <Minus size={20} className="group-hover:scale-110 transition-transform" />
+      </button>
+
+      {/* زر إعادة التوسيط */}
+      <button 
+        onClick={handleReset}
+        className="p-3 bg-slate-900/60 backdrop-blur-xl border border-white/10 rounded-xl text-indigo-400 hover:bg-indigo-600 hover:text-white transition-all shadow-2xl group mt-2"
+        title="إعادة التوسيط"
+      >
+        <Maximize size={20} className="group-hover:rotate-90 transition-transform" />
+      </button>
+    </div>
+  );
 };
 
 const EmergencyMap = ({ medicalData = [] }) => {
@@ -69,7 +115,7 @@ const EmergencyMap = ({ medicalData = [] }) => {
     className: 'custom-icon',
     html: `<div class="pulse-ring" style="border-color: ${color}"></div><div class="core-dot" style="background: ${color}"></div>`,
     iconSize: [20, 20],
-    iconAnchor: [10, 10] // لضمان توسط الأيقونة في الإحداثيات
+    iconAnchor: [10, 10]
   });
 
   return (
@@ -85,7 +131,7 @@ const EmergencyMap = ({ medicalData = [] }) => {
             <input
               type="text"
               placeholder="ابحث في فلسطين..."
-              className="w-full bg-transparent text-white py-3 pr-2 pl-4 focus:outline-none"
+              className="w-full bg-transparent text-white py-3 pr-2 pl-4 focus:outline-none text-sm"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
             />
@@ -97,9 +143,9 @@ const EmergencyMap = ({ medicalData = [] }) => {
           </div>
 
           {results.length > 0 && (
-            <div className="mt-2 border-t border-white/5 max-h-64 overflow-y-auto">
+            <div className="mt-2 border-t border-white/5 max-h-64 overflow-y-auto hide-scrollbar">
               {results.map((res, idx) => (
-                <button key={idx} onClick={() => handleSelectResult(res)} className="w-full flex items-center gap-4 px-4 py-4 hover:bg-white/5 text-right group">
+                <button key={idx} onClick={() => handleSelectResult(res)} className="w-full flex items-center gap-4 px-4 py-4 hover:bg-white/5 text-right group transition-colors">
                   <MapPin size={16} className="text-blue-500" />
                   <div className="flex flex-col">
                     <span className="text-white font-bold text-sm">{res.display_name.split(',')[0]}</span>
@@ -112,11 +158,15 @@ const EmergencyMap = ({ medicalData = [] }) => {
         </div>
       </div>
 
+      {/* الخريطة */}
       <MapContainer center={[31.9, 35.2]} zoom={9} zoomControl={false} className="h-full w-full z-10">
         <MapHandler target={selectedLocation} /> 
+        
+        {/* أزرار التحكم المخصصة */}
+        <CustomZoomControls target={selectedLocation} />
+
         <TileLayer url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png" />
 
-        {/* إصلاح منطق الـ JSX هنا */}
         {selectedLocation && (
           <React.Fragment>
             <Marker position={[selectedLocation.lat, selectedLocation.lon]}>
@@ -148,6 +198,7 @@ const EmergencyMap = ({ medicalData = [] }) => {
         .pulse-ring { position: absolute; width: 30px; height: 30px; border: 2px solid; border-radius: 50%; animation: pulse 2s infinite; pointer-events: none; }
         .core-dot { width: 10px; height: 10px; border-radius: 50%; border: 2px solid white; z-index: 10; }
         @keyframes pulse { 0% { transform: scale(0.5); opacity: 1; } 100% { transform: scale(2); opacity: 0; } }
+        .hide-scrollbar::-webkit-scrollbar { display: none; }
       `}</style>
     </div>
   );

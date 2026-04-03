@@ -1,20 +1,18 @@
 import { createBrowserRouter, Navigate } from 'react-router-dom';
 
-// استيراد المكون الأب الجديد الذي يحتوي على مراقب الإنترنت
+// استيراد المكون الأب
 import App from '../App'; 
 
-// 1. استيراد القوالب (Layouts)
+// 1. القوالب
 import MainLayout from '../Layouts/MainLayout'; 
-
-
 import EmergencyLayout from '../Layouts/EmergencyLayout';
 
-// 2. استيراد الصفحات العامة
+// 2. الصفحات العامة
 import LandingPage from '../pages/Landing';
 import Login from '../pages/Auth/Login';
 import Kids from '../pages/KidsPage/Kids';
 
-// 3. استيراد صفحات نظام البلدية
+// 3. صفحات البلدية
 import ControlPanel from '../components/Municipalities/Shared/ControlPanel';
 import Reports from '../components/Municipalities/Shared/Reports';
 import MaintenanceTeams from '../components/Municipalities/Shared/MaintenanceTeams';
@@ -28,31 +26,39 @@ import StaffStatus from '../components/Municipalities/CivilAdministration/StaffS
 import SupportTickets from '../components/Municipalities/CivilAdministration/SupportTickets';
 import ManageStaff from '../components/Municipalities/CivilAdministration/ManageStaff';
 
-// 4. استيراد صفحات نظام الطوارئ
+// 4. صفحات الطوارئ
 import EmergencyDashboard from '../components/Emergency/components/EmergencyDashboard';
 import MedicalHistoryView from '../components/Emergency/components/MedicalHistoryView';
 import CallArchiveView from '../components/Emergency/components/CallArchiveView';
 import MessageArchiveView from '../components/Emergency/components/MessageArchiveView';
 import FieldUnitsView from '../components/Emergency/components/FieldUnitsView';
 import MedicalCentersView from '../components/Emergency/components/MedicalCentersView';
+import EmergencyCenters from '../components/Emergency/components/EmergencyCenters';
+import EmergencyStaffStatus from '../components/Emergency/components/EmergencyStaffStatus';
+import EmergencyLogin from '../components/Emergency/components/EmergencyLogin';
+
+// --- الطريقة الأضمن لاكتشاف Tauri ---
+// اكتشاف Tauri عبر اسم المحرك (WebView)
+const queryParams = new URLSearchParams(window.location.search);
+const isTauri = queryParams.get('platform') === 'tauri' || !!window.__TAURI_IPC__;;
 
 const routes = createBrowserRouter([
   {
-    // جعل المكون App هو الجذر (Root) لجميع المسارات
     path: '/',
     element: <App />, 
     children: [
-      // المجموعة الأولى: الصفحات العامة
       {
         path: '/',
         children: [
-          { index: true, element: <LandingPage /> },
+          { 
+            index: true, 
+            element: isTauri ? <Navigate to="/EmergencyLogin" replace /> : <LandingPage /> 
+          },
           { path: 'login', element: <Login /> },
           { path: 'Kids', element: <Kids /> },
+          { path: 'EmergencyLogin', element: <EmergencyLogin /> }, // إضافة مسار تسجيل الدخول
         ]
       },
-
-      // المجموعة الثانية: صفحات نظام البلدية (تستخدم MainLayout)
       {
         path: '/',
         element: <MainLayout />, 
@@ -71,8 +77,6 @@ const routes = createBrowserRouter([
           { path: 'ManageStaff', element: <ManageStaff /> },
         ]
       },
-
-      // المجموعة الثالثة: صفحات نظام الطوارئ (تستخدم EmergencyLayout)
       {
         path: '/',
         element: <EmergencyLayout />, 
@@ -83,12 +87,12 @@ const routes = createBrowserRouter([
           { path: 'MessageArchiveView', element: <MessageArchiveView /> },
           { path: 'FieldUnitsView', element: <FieldUnitsView /> },
           { path: 'MedicalCentersView', element: <MedicalCentersView /> },
+          { path: 'EmergencyCenters', element: <EmergencyCenters /> },
+          { path: 'EmergencyStaffStatus', element: <EmergencyStaffStatus /> },
         ]
       },
     ]
   },
-
-  // التوجيه الافتراضي (خارج نطاق الـ App إذا أردت أو داخله)
   {
     path: '*',
     element: <Navigate to="/" replace />

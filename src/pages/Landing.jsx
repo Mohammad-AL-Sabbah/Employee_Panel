@@ -1,7 +1,7 @@
 /* eslint-disable no-unused-vars */
 import React, { useEffect } from 'react'; 
 import { motion } from 'framer-motion';
-import { Link } from 'react-router-dom';
+import { Link , useNavigate } from 'react-router-dom';
 import { MapContainer, TileLayer, Marker, Popup, Tooltip } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
@@ -17,10 +17,24 @@ const createCustomIcon = (color) => new L.DivIcon({
   iconSize: [12, 12],
 });
 
+
+
+
 const LandingPage = () => {
   useEffect(() => {
     document.title = "P.S.R.S | نظام البلاغات الذكي";
   }, []);
+
+
+
+const navigate = useNavigate();
+
+useEffect(() => {
+    if (window.__TAURI_IPC__ || navigator.userAgent.includes('Tauri')) {
+      navigate('/EmergencyDashboard', { replace: true });
+    }
+  }, [navigate]);
+  
 
   const containerVariants = {
     hidden: { opacity: 0 },
