@@ -1,18 +1,26 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
 import { 
   Bell, User, ChevronDown, Clock, CloudSun, MapPin, 
   CloudRain, Sun, Cloud, Loader2 
 } from 'lucide-react';
 
 const Header = () => {
-  const storedName = localStorage.getItem("userName") || "User Name";
-  const storedRole = localStorage.getItem("userRole") || "user";
-
+  // ✅ التعديل هنا: استخدام sessionStorage بدلاً من localStorage
+  const [userName, setUserName] = useState("");
+  const [userRole, setUserRole] = useState("");
   
   const [currentTime, setCurrentTime] = useState(new Date());
   const [weather, setWeather] = useState({ temp: 18, desc: "صافٍ", icon: 'Clear' });
   const [loadingWeather, setLoadingWeather] = useState(true);
+
+  // قراءة البيانات من sessionStorage عند تحميل المكون
+  useEffect(() => {
+    const name = sessionStorage.getItem("userName");
+    const role = sessionStorage.getItem("userRole");
+    
+    setUserName(name || "موظف");
+    setUserRole(role || "موظف");
+  }, []);
 
   // 1. تحديث الوقت كل دقيقة
   useEffect(() => {
@@ -21,7 +29,7 @@ const Header = () => {
   }, []);
 
   // 2. جلب حالة الطقس مع معالجة ذكية للأخطاء
-useEffect(() => {
+  useEffect(() => {
     const fetchWeather = async () => {
       setLoadingWeather(true);
       try {
@@ -59,6 +67,16 @@ useEffect(() => {
     }
   };
 
+  // ترجمة الدور إلى العربية
+  const getRoleLabel = (role) => {
+    switch(role) {
+      case "SuperAdmin": return "مدير عام";
+      case "MunicipalEmployee": return "موظف بلدية";
+      case "EmergencyEmployee": return "موظف طوارئ";
+      default: return "موظف";
+    }
+  };
+
   return (
     <header className="h-16 bg-white/80 backdrop-blur-md border-b border-slate-100 flex justify-between items-center px-8 z-30 sticky top-0 shadow-sm" dir="rtl">
       
@@ -74,10 +92,10 @@ useEffect(() => {
 
           <div className="text-right ml-1">
             <p className="text-sm font-black text-slate-900 group-hover:text-emerald-600 transition-colors leading-tight">
-              {storedName}
+              {userName}
             </p>
             <p className="text-[10px] mt-1 text-slate-400 font-bold uppercase tracking-tighter">
-              {storedRole} نظام PSRS
+              {getRoleLabel(userRole)} - نظام PSRS
             </p>
           </div>
           <ChevronDown size={14} className="text-slate-300 group-hover:text-slate-600 transition-colors" />

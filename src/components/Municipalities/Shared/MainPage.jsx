@@ -1,23 +1,52 @@
 /* eslint-disable no-unused-vars */
-import React, { useEffect, useRef } from 'react'; // 1. إضافة useRef
+import React, { useEffect, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { 
   Megaphone, ShieldCheck, TrendingUp, Bell, 
   ArrowLeft, Clock, Info, CheckCircle, Zap,
-  FileSearch, Users, MessageSquare, AlertTriangle 
+  FileSearch, Users, MessageSquare, AlertTriangle,
+  LogOut
 } from 'lucide-react';
 import ReportsData from './ReportsData';
-
+import ApiAuthToken from '../../../Api/ApiAuthToken';
 
 const MainPage = () => {
   const instructionsRef = useRef(null);
+  const navigate = useNavigate();
+  const [userName, setUserName] = React.useState('');
 
   const scrollToInstructions = () => {
     instructionsRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
-  const title = useEffect(() =>{
-document.title = "الصفحة الرئيسية | P.S.R.S";
-  },[]);
 
+  useEffect(() => {
+    document.title = "الصفحة الرئيسية | P.S.R.S";
+    
+    // ✅ التعديل هنا: استخدام sessionStorage بدلاً من localStorage
+    const token = sessionStorage.getItem("accessToken");
+    const role = sessionStorage.getItem("userRole");
+    const name = sessionStorage.getItem("userName");
+    
+    if (!token || (role !== "MunicipalEmployee" && role !== "SuperAdmin")) {
+      navigate("/login");
+    } else {
+      setUserName(name || 'موظف');
+    }
+  }, [navigate]);
+
+  // دالة تسجيل الخروج
+  const handleLogout = async () => {
+    try {
+      await ApiAuthToken.post('/Auth/logout');
+    } catch (error) {
+      console.error('Logout error:', error);
+    } finally {
+      sessionStorage.removeItem('accessToken');
+      sessionStorage.removeItem('userRole');
+      sessionStorage.removeItem('userName');
+      navigate('/login');
+    }
+  };
 
   return (
     <div className="p-8 space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700" dir="rtl">
@@ -25,8 +54,12 @@ document.title = "الصفحة الرئيسية | P.S.R.S";
       {/* 1. البانر الرئيسي */}
       <div className="relative overflow-hidden bg-gradient-to-br from-slate-900 via-slate-800 to-emerald-900 rounded-[3rem] p-12 text-white shadow-2xl">
         <div className="relative z-10 max-w-3xl">
-          <div className="flex items-center gap-2 bg-emerald-500/20 border border-emerald-500/30 w-fit px-4 py-1.5 rounded-full text-[10px] font-black mb-6 backdrop-blur-md text-emerald-400 uppercase tracking-widest">
-            <Megaphone size={14} /> 
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2 bg-emerald-500/20 border border-emerald-500/30 w-fit px-4 py-1.5 rounded-full text-[10px] font-black mb-6 backdrop-blur-md text-emerald-400 uppercase tracking-widest">
+              <Megaphone size={14} /> 
+              مرحباً {userName}
+            </div>
+        
           </div>
           <h1 className="text-5xl font-black mb-6 leading-tight tracking-tighter">
             مرحباً بك في نظام <span className="text-emerald-500">P.S.R.S</span> الفلسطيني
@@ -52,10 +85,9 @@ document.title = "الصفحة الرئيسية | P.S.R.S";
         </div>
       </div>
  
-        {/* 2. قسم إحصائيات البلاغات */}
- <ReportsData />
+      {/* 2. قسم إحصائيات البلاغات */}
+      <ReportsData />
       
-
       {/* 3. قسم التوجيهات السريعة */}
       <div className="grid grid-cols-12 gap-8">
         <div className="col-span-12 lg:col-span-8 bg-white rounded-[2.5rem] p-10 border border-slate-100 shadow-sm relative overflow-hidden">
@@ -79,11 +111,10 @@ document.title = "الصفحة الرئيسية | P.S.R.S";
             <ShieldCheck size={40} />
           </div>
           <h4 className="font-black text-emerald-900 text-lg">اتصال آمن ومستقر</h4>
-          <p className="text-emerald-600/70 text-xs mt-2 font-medium">أنت متصل بالنظام بنجاح </p>
+          <p className="text-emerald-600/70 text-xs mt-2 font-medium">أنت متصل بالنظام بنجاح</p>
         </div>
       </div>
 
-  
       <div 
         ref={instructionsRef}
         className="pt-12 space-y-8"
@@ -152,6 +183,5 @@ const InstructionStep = ({ icon: Icon, step, title, desc }) => (
         </div>
     </div>
 );
-
 
 export default MainPage;

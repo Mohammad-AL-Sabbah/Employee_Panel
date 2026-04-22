@@ -1,14 +1,34 @@
-
 import React from 'react';
-import { NavLink, Link } from 'react-router-dom'; // نستخدم NavLink بدلاً من Link
+import { NavLink, Link, useNavigate } from 'react-router-dom';
 import { 
   LayoutGrid, AlertCircle, Users, CheckCircle, 
   Settings, HelpCircle, LogOut, ChevronLeft, ShieldCheck,
-  Home,Wrench
+  Home, Wrench
 } from 'lucide-react';
+import ApiAuthToken from '../../../Api/ApiAuthToken';
 
-// تحديث SidebarItem ليستخدم NavLink
-const SidebarItem = ({ icon: Icon, label, to, danger = false, hasArrow = false }) => (
+// تحديث SidebarItem ليستخدم NavLink (بدون تغيير)
+const SidebarItem = ({ icon: Icon, label, to, danger = false, hasArrow = false, onClick }) => (
+  <div 
+    onClick={onClick}
+    className={`
+      flex items-center justify-between p-3.5 rounded-xl cursor-pointer transition-all duration-200 no-underline
+      ${danger 
+        ? 'text-rose-500 hover:bg-rose-50' 
+        : 'text-slate-500 hover:bg-slate-50 hover:text-slate-800'
+      }
+    `}
+  >
+    <div className="flex items-center gap-3">
+      <Icon size={18} />
+      <span className="text-xs font-bold">{label}</span>
+    </div>
+    {hasArrow && <ChevronLeft size={14} className="opacity-30" />}
+  </div>
+);
+
+// مكون SidebarItem للـ NavLink (للمسارات العادية)
+const SidebarNavItem = ({ icon: Icon, label, to, danger = false, hasArrow = false }) => (
   <NavLink 
     to={to} 
     className={({ isActive }) => `
@@ -39,33 +59,54 @@ const SidebarItem = ({ icon: Icon, label, to, danger = false, hasArrow = false }
 );
 
 const Sidebar = () => {
+  const navigate = useNavigate();
+
+  // دالة تسجيل الخروج
+  const handleLogout = async () => {
+    try {
+      await ApiAuthToken.post('/Auth/logout');
+    } catch (error) {
+      console.error('Logout error:', error);
+    } finally {
+      // تنظيف sessionStorage
+      sessionStorage.removeItem('accessToken');
+      sessionStorage.removeItem('userRole');
+      sessionStorage.removeItem('userName');
+      // التوجيه إلى صفحة login
+      navigate('/');
+    }
+  };
+
   return (
     <aside className="w-64 bg-white border-l border-slate-200 p-4 flex flex-col shadow-sm z-20 h-screen sticky top-0">
       {/* قسم الشعار */}
-      <div className="flex items-center  justify-center gap-2 mb-8 px-2 py-4" style={{flexDirection:"column"}}>
+      <div className="flex items-center justify-center gap-2 mb-8 px-2 py-4" style={{flexDirection:"column"}}>
         <Link to="/MainPage" className="bg-[#10b981] p-2 rounded-lg text-slate-50 shadow-sm shadow-emerald-200">
-                      <ShieldCheck size={24} />
-
+          <ShieldCheck size={24} />
         </Link>
-                <h2 className="text-lg font-bold text-slate-800 ">لوحة تحكم الموظف</h2>
-
+        <h2 className="text-lg font-bold text-slate-800">لوحة تحكم الموظف</h2>
       </div>
       
       {/* روابط التنقل */}
       <nav className="flex-grow space-y-1 overflow-y-auto">
         <p className="text-[11px] font-bold text-slate-400 mb-2 px-3 uppercase tracking-wider">القائمة</p>
-        <SidebarItem icon={Home} label="الصفحة الرئيسية" to="/MainPage"  hasArrow/>
-        <SidebarItem icon={LayoutGrid} label="لوحة التحكم" to="/ControlPanel" hasArrow />
-        <SidebarItem icon={AlertCircle} label="إدارة البلاغات" to="/reports" hasArrow />
-        <SidebarItem icon={Wrench} label="فرق الصيانة" to="/teams" hasArrow />
-        <SidebarItem icon={Users} label="المستخدمين" to="/users" hasArrow />
-        <SidebarItem icon={Settings} label="الإعدادات" to="/settings"  hasArrow/>
+        <SidebarNavItem icon={Home} label="الصفحة الرئيسية" to="/MainPage" hasArrow />
+        <SidebarNavItem icon={LayoutGrid} label="لوحة التحكم" to="/ControlPanel" hasArrow />
+        <SidebarNavItem icon={AlertCircle} label="إدارة البلاغات" to="/reports" hasArrow />
+        <SidebarNavItem icon={Wrench} label="فرق الصيانة" to="/teams" hasArrow />
+        <SidebarNavItem icon={Users} label="المستخدمين" to="/users" hasArrow />
+        <SidebarNavItem icon={Settings} label="الإعدادات" to="/settings" hasArrow />
       </nav>
 
       {/* التذييل */}
       <div className="mt-auto pt-4 border-t border-slate-100">
-        <SidebarItem icon={HelpCircle} label="المساعدة" to="/help" />
-        <SidebarItem icon={LogOut} label="تسجيل الخروج" to="/" danger />
+        <SidebarNavItem icon={HelpCircle} label="المساعدة" to="/help" />
+        <SidebarItem 
+          icon={LogOut} 
+          label="تسجيل الخروج" 
+          danger 
+          onClick={handleLogout}
+        />
       </div>
     </aside>
   );

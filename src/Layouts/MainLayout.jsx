@@ -4,8 +4,10 @@ import AdminSideBar from '../components/Municipalities/CivilAdministration/Admin
 import Header from '../components/Municipalities/Shared/Header';
 
 const MainLayout = () => {
-  const userRole = localStorage.getItem("userRole");
-  const isSuperAdmin = userRole === "مسؤول";
+  // ✅ التصحيح: استخدام sessionStorage بدلاً من localStorage
+  // ✅ التصحيح: المقارنة مع "SuperAdmin" بدلاً من "مسؤول"
+  const userRole = sessionStorage.getItem("userRole");
+  const isSuperAdmin = userRole === "SuperAdmin";
 
   return (
     <div className="flex h-screen w-full overflow-hidden bg-[#f8fafc]" dir="rtl">
@@ -19,4 +21,5 @@ const MainLayout = () => {
     </div>
   );
 };
+
 export default MainLayout;

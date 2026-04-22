@@ -1,47 +1,68 @@
 import React, { useState, useEffect } from 'react';
-import { NavLink, Link, useLocation } from 'react-router-dom';
+import { NavLink, Link, useLocation, useNavigate } from 'react-router-dom';
 import { 
   LayoutGrid, AlertCircle, Users, Settings, LogOut, 
   ChevronLeft, ShieldCheck, Home, Wrench, FileClock, 
   UserCheck, Ticket, ChevronDown, UserCog
 } from 'lucide-react';
+import ApiAuthToken from '../../../Api/ApiAuthToken';
 
-/** * 1. مكون العنصر العادي في القائمة الجانبية
- * تم إصلاح تباين الألوان هنا ليكون النص أوضح (Slate-600)
- */
-const SidebarItem = ({ icon: Icon, label, to, danger = false, hasArrow = false }) => (
-  <NavLink 
-    to={to} 
-    className={({ isActive }) => `
-      flex items-center justify-between p-3.5 rounded-xl cursor-pointer transition-all duration-200 no-underline group
-      ${isActive 
-        ? 'bg-[#10b981] text-white shadow-lg shadow-emerald-100' 
-        : danger 
-          ? 'text-rose-600 hover:bg-rose-50' 
-          : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
-      }
-    `}
-  >
-    {({ isActive }) => (
-      <>
+/** * 1. مكون العنصر العادي في القائمة الجانبية */
+const SidebarItem = ({ icon: Icon, label, to, danger = false, hasArrow = false, onClick }) => {
+  // إذا كان onClick موجود، نستخدم div، وإلا نستخدم NavLink
+  if (onClick) {
+    return (
+      <div 
+        onClick={onClick}
+        className={`
+          flex items-center justify-between p-3.5 rounded-xl cursor-pointer transition-all duration-200 no-underline group
+          ${danger 
+            ? 'text-rose-600 hover:bg-rose-50' 
+            : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
+          }
+        `}
+      >
         <div className="flex items-center gap-3">
-          <Icon size={18} className={`${isActive ? 'text-white' : 'text-slate-500 group-hover:text-slate-800'}`} />
+          <Icon size={18} className={`${danger ? 'text-rose-500' : 'text-slate-500 group-hover:text-slate-800'}`} />
           <span className="text-xs font-bold tracking-tight">{label}</span>
         </div>
-        {hasArrow && (
-          <ChevronLeft 
-            size={14} 
-            className={`transition-transform duration-200 ${isActive ? 'text-white rotate-[-90deg]' : 'text-slate-300 group-hover:text-slate-500'}`} 
-          />
-        )}
-      </>
-    )}
-  </NavLink>
-);
+        {hasArrow && <ChevronLeft size={14} className="opacity-30" />}
+      </div>
+    );
+  }
+  
+  return (
+    <NavLink 
+      to={to} 
+      className={({ isActive }) => `
+        flex items-center justify-between p-3.5 rounded-xl cursor-pointer transition-all duration-200 no-underline group
+        ${isActive 
+          ? 'bg-[#10b981] text-white shadow-lg shadow-emerald-100' 
+          : danger 
+            ? 'text-rose-600 hover:bg-rose-50' 
+            : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
+        }
+      `}
+    >
+      {({ isActive }) => (
+        <>
+          <div className="flex items-center gap-3">
+            <Icon size={18} className={`${isActive ? 'text-white' : 'text-slate-500 group-hover:text-slate-800'}`} />
+            <span className="text-xs font-bold tracking-tight">{label}</span>
+          </div>
+          {hasArrow && (
+            <ChevronLeft 
+              size={14} 
+              className={`transition-transform duration-200 ${isActive ? 'text-white rotate-[-90deg]' : 'text-slate-300 group-hover:text-slate-500'}`} 
+            />
+          )}
+        </>
+      )}
+    </NavLink>
+  );
+};
 
-/** * 2. مكون القائمة المنسدلة (Collapse)
- * تم حل مشكلة "isActive is not defined" (الصورة 3) عن طريق تمريرها كدالة داخل الـ NavLink
- */
+/** * 2. مكون القائمة المنسدلة (Collapse) */
 const CollapsibleSidebarItem = ({ icon: Icon, label, items }) => {
   const [isOpen, setIsOpen] = useState(false);
   const location = useLocation();
@@ -75,7 +96,6 @@ const CollapsibleSidebarItem = ({ icon: Icon, label, items }) => {
                 ${isActive ? 'text-[#10b981] font-black' : 'text-slate-500 hover:text-slate-900'} 
               `}
             >
-              {/* الحل الصحيح لخطأ الصورة رقم 3 */}
               {({ isActive }) => (
                 <>
                   <item.icon size={14} className={isActive ? 'text-[#10b981]' : 'text-slate-400 group-hover/sub:text-slate-700'} />
@@ -91,24 +111,52 @@ const CollapsibleSidebarItem = ({ icon: Icon, label, items }) => {
 };
 
 const AdminSideBar = () => {
-  // 3. حل مشكلة الـ useEffect (الصورة 2)
-  // نقوم بجلب بيانات المستخدم مباشرة عند تعريف الـ State لتجنب Cascading Renders
-  const [userRole, setUserRole] = useState(() => {
-    const savedUser = JSON.parse(localStorage.getItem('user'));
-    return savedUser?.role?.toLowerCase() || 'admin';
-  });
+  const navigate = useNavigate();
+  
+  // ✅ التعديل: استخدام sessionStorage بدلاً من localStorage
+  const [userName, setUserName] = useState("");
+  const [userRole, setUserRole] = useState("");
 
   useEffect(() => {
     document.title = "إدارة النظام | P.S.R.S";
-  }, []);
+    
+    // ✅ قراءة البيانات من sessionStorage
+    const name = sessionStorage.getItem("userName");
+    const role = sessionStorage.getItem("userRole");
+    
+    setUserName(name || "مدير");
+    setUserRole(role || "SuperAdmin");
+    
+    // التحقق من الصلاحية - إذا لم يكن SuperAdmin، يخرج
+    if (role !== "SuperAdmin") {
+      navigate('/login');
+    }
+  }, [navigate]);
+
+  // دالة تسجيل الخروج
+  const handleLogout = async () => {
+    try {
+      await ApiAuthToken.post('/Auth/logout');
+    } catch (error) {
+      console.error('Logout error:', error);
+    } finally {
+      // تنظيف sessionStorage
+      sessionStorage.removeItem('accessToken');
+      sessionStorage.removeItem('userRole');
+      sessionStorage.removeItem('userName');
+      // التوجيه إلى صفحة login
+      navigate('/login');
+    }
+  };
 
   return (
     <aside className="w-64 bg-white border-l border-slate-200 p-2 flex flex-col shadow-sm z-20 h-screen sticky top-0" dir="rtl">
       <div className="flex flex-col items-center justify-center gap-2 mb-8 px-2 py-4">
-        <Link to="/MainPage" className="bg-[#10b981] p-2 rounded-lg text-slate-50 shadow-sm shadow-emerald-200 transition-transform hover:scale-105 active:scale-95">
+        <Link to="/AdminControlPanel" className="bg-[#10b981] p-2 rounded-lg text-slate-50 shadow-sm shadow-emerald-200 transition-transform hover:scale-105 active:scale-95">
           <ShieldCheck size={24} />
         </Link>
         <h2 className="text-lg font-bold text-slate-800 tracking-tight">لوحة المسؤول</h2>
+      
       </div>
       
       {/* روابط التنقل */}
@@ -122,7 +170,6 @@ const AdminSideBar = () => {
         <SidebarItem icon={Wrench} label="فرق الصيانة" to="/teams" hasArrow />
         <SidebarItem icon={Users} label="قاعدة المواطنين" to="/users" hasArrow />
 
-        {/* القسم المجمع للموظفين - يحل مشكلة الزحام الجمالي */}
         <CollapsibleSidebarItem 
           icon={UserCog} 
           label="شؤون الموظفين" 
@@ -140,7 +187,7 @@ const AdminSideBar = () => {
 
       {/* التذييل */}
       <div className="mt-auto pt-4 border-t border-slate-100">
-        <SidebarItem icon={LogOut} label="تسجيل الخروج" to="/" danger />
+        <SidebarItem icon={LogOut} label="تسجيل الخروج" danger onClick={handleLogout} />
       </div>
     </aside>
   );
