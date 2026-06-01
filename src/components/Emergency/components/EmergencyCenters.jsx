@@ -6,7 +6,6 @@ import {
   Globe2, ArrowLeftRight
 } from 'lucide-react';
 
-import EmergencyHeader from './EmergencyHeader';
 import EmergencySidebar from './EmergencySidebar';
 
 const EmergencyCenters = () => {
@@ -42,9 +41,7 @@ const EmergencyCenters = () => {
         .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
       `}</style>
 
-      <div className="h-14 w-full flex-shrink-0 z-[60]">
-        <EmergencyHeader pageTitle="دليل أقسام الطوارئ في المحافظات" />
-      </div>
+    
 
       <div className="flex flex-1 overflow-hidden">
         <aside className="w-64 h-full flex-shrink-0 border-l border-slate-800 bg-[#050505] z-50">

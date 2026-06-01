@@ -7,7 +7,6 @@ import {
   Clock, ArrowUpDown
 } from 'lucide-react';
 
-import EmergencyHeader from './EmergencyHeader';
 import EmergencySidebar from './EmergencySidebar';
 
 const EmergencyStaffStatus = () => {
@@ -55,7 +54,6 @@ const EmergencyStaffStatus = () => {
         .truncate-text { display: -webkit-box; -webkit-line-clamp: 1; -webkit-box-orient: vertical; overflow: hidden; }
       `}</style>
 
-      <EmergencyHeader pageTitle="حالة الكادر البشري الميداني" />
 
       <div className="flex flex-1 overflow-hidden">
         <aside className="w-64 h-full flex-shrink-0 border-l border-slate-800 bg-[#050505] z-50">

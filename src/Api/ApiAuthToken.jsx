@@ -1,12 +1,13 @@
 import axios from 'axios';
 
-const baseURL = import.meta.env.VITE_BASE_URL;
+const baseURL = import.meta.env.VITE_BASE_URL + '/api';
 
 const ApiAuthToken = axios.create({
   baseURL: baseURL,
   withCredentials: true,
 });
 
+// متغيرات التحكم في الطابور
 let isRefreshing = false;
 let failedQueue = [];
 
@@ -21,7 +22,7 @@ const processQueue = (error, token = null) => {
   failedQueue = [];
 };
 
-// مراقب الطلبات
+// 1. مراقب الطلبات الصادرة
 ApiAuthToken.interceptors.request.use(
   (config) => {
     const token = sessionStorage.getItem('accessToken');
@@ -33,19 +34,18 @@ ApiAuthToken.interceptors.request.use(
   (error) => Promise.reject(error)
 );
 
-// مراقب الردود
+// 2. مراقب الردود الواردة (التصحيح النهائي)
 ApiAuthToken.interceptors.response.use(
   (response) => response,
-  async (error) => {
+  (error) => {
     const originalRequest = error.config;
 
-    // تجنب التكرار لبعض المسارات
-    if (originalRequest.url?.includes('/refresh-token') ||
-        originalRequest.url?.includes('/login') ||
-        originalRequest.url?.includes('/logout')) {
+    // منع الدخول في حلقة مفرغة
+    if (!originalRequest || originalRequest.url?.includes('/refresh-token') || originalRequest.url?.includes('/login')) {
       return Promise.reject(error);
     }
 
+    // إذا انتهت الصلاحية ولم يتم المحاولة مسبقاً
     if (error.response?.status === 401 && !originalRequest._retry) {
       
       if (isRefreshing) {
@@ -62,37 +62,35 @@ ApiAuthToken.interceptors.response.use(
       originalRequest._retry = true;
       isRefreshing = true;
 
-      try {
-        const response = await axios.post(`${baseURL}/Auth/Account/refresh-token`, {}, {
-          withCredentials: true
+      // ✅ الحل: تنفيذ التجديد داخل Promise نظيف بدون async executor
+      return new Promise((resolve, reject) => {
+        // نستخدم axios الأساسي لطلب التجديد لتجنب الـ interceptors
+        axios.post(`${baseURL}/Auth/Account/refresh-token`, {}, {
+          withCredentials: true,
+          headers: { 'Authorization': `Bearer ${sessionStorage.getItem('accessToken')}` }
+        })
+        .then(({ data }) => {
+          if (data.success && data.accessToken) {
+            sessionStorage.setItem('accessToken', data.accessToken);
+            originalRequest.headers.Authorization = `Bearer ${data.accessToken}`;
+            processQueue(null, data.accessToken);
+            resolve(ApiAuthToken(originalRequest));
+          } else {
+            throw new Error('Refresh failed');
+          }
+        })
+        .catch((refreshError) => {
+          processQueue(refreshError, null);
+          sessionStorage.clear();
+          if (!window.location.pathname.includes('/login')) {
+            window.location.href = '/login';
+          }
+          reject(refreshError);
+        })
+        .finally(() => {
+          isRefreshing = false;
         });
-
-        if (response.data.success && response.data.accessToken) {
-          const { accessToken } = response.data;
-          
-          sessionStorage.setItem('accessToken', accessToken);
-          
-          originalRequest.headers.Authorization = `Bearer ${accessToken}`;
-          processQueue(null, accessToken);
-          
-          return ApiAuthToken(originalRequest);
-        } else {
-          throw new Error('Refresh failed - no token');
-        }
-        
-      } catch (refreshError) {
-        console.error('Token refresh failed:', refreshError);
-        sessionStorage.removeItem('accessToken');
-        processQueue(refreshError, null);
-        
-        if (!window.location.pathname.includes('/login')) {
-          window.location.href = '/login';
-        }
-        return Promise.reject(refreshError);
-        
-      } finally {
-        isRefreshing = false;
-      }
+      });
     }
 
     return Promise.reject(error);

@@ -19,19 +19,25 @@ const MainPage = () => {
     instructionsRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
 
-  useEffect(() => {
+useEffect(() => {
     document.title = "الصفحة الرئيسية | P.S.R.S";
     
-    // ✅ التعديل هنا: استخدام sessionStorage بدلاً من localStorage
     const token = sessionStorage.getItem("accessToken");
     const role = sessionStorage.getItem("userRole");
     const name = sessionStorage.getItem("userName");
     
-    if (!token || (role !== "MunicipalEmployee" && role !== "SuperAdmin")) {
+  
+    if (!token) {
       navigate("/login");
-    } else {
-      setUserName(name || 'موظف');
+      return;
     }
+
+    if (role !== "MunicipalEmployee" && role !== "SuperAdmin") {
+      navigate("/login");
+      return;
+    }
+
+    setUserName(name || 'موظف');
   }, [navigate]);
 
   // دالة تسجيل الخروج

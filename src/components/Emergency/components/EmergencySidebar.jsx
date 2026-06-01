@@ -5,7 +5,7 @@ import {
   LayoutDashboard, Map as MapIcon, FileText,
   Radio, History, Activity, LogOut, ShieldCheck,
   ChevronDown, MessageSquare, Phone,
-  Ambulance, Hospital, Home // أيقونات جديدة لوحدات الطوارئ
+  Ambulance, Hospital, Home , PlusCircle 
 } from 'lucide-react';
 
 const EmergencySidebar = ({ isOpen }) => {
@@ -15,7 +15,7 @@ const EmergencySidebar = ({ isOpen }) => {
 
   const navLinks = [
     { id: '01', path: '/EmergencyDashboard', name: 'الرئيسية', icon: <LayoutDashboard size={22} /> },
-
+    { id: '07', path: '/EmergencyReportsView', name: 'بلاغات الطوارئ', icon: <Radio size={22} className="text-emerald-500" /> },
     { 
       id: '04', 
       name: 'وحدات الطوارئ', 
@@ -23,14 +23,14 @@ const EmergencySidebar = ({ isOpen }) => {
       isDropdown: true,
       subLinks: [
         { name: 'الوحدات الميدانية', path: '/FieldUnitsView', icon: <Ambulance size={16} /> },
+        { name: 'إضافة وحدة ميدانية', path: '/AddFieldUnitView', icon: <PlusCircle size={16} className="text-blue-400" /> }, 
         { name: 'المراكز الطبية والمستشفيات', path: '/hospitals', icon: <Hospital size={16} /> },
         { name: 'مراكز الإيواء ', path: '/shelters', icon: <Home size={16} /> },
       ]
     },
-        { id: '02', path: '/EmergencyCenters', name: 'مراكز الطوارئ', icon: <MapIcon size={22} /> },
-
+    { id: '02', path: '/EmergencyCenters', name: 'مراكز الطوارئ', icon: <MapIcon size={22} /> },
     { id: '05', path: '/MedicalHistoryView', name: 'السجل الطبي العام', icon: <Activity size={22} className="text-red-500" /> },
-        { 
+    { 
       id: '03', 
       name: 'مركز الأرشيف', 
       icon: <FileText size={22} />,
@@ -63,6 +63,9 @@ const EmergencySidebar = ({ isOpen }) => {
     setOpenSubMenu(openSubMenu === id ? null : id);
   };
 
+  // 🛑 إذا كان السايد بار مغلقاً، لا تقم بعمل رندر له نهائياً لمنع حجز أي مساحة بكسل واحدة في الشاشة
+  if (!isOpen) return null;
+
   return (
     <>
       {/* ستايل لإخفاء السكرول بار نهائياً */}
@@ -72,12 +75,10 @@ const EmergencySidebar = ({ isOpen }) => {
       `}</style>
 
       <aside 
-        className={`fixed top-14 right-0 h-[calc(100vh-3.5rem)] bg-[#0a0a0a] border-l border-slate-800 transition-all duration-300 z-[9999] shadow-2xl ${
-          isOpen ? 'w-[280px]' : 'w-0'
-        } overflow-hidden`}
+        className="fixed top-14 right-0 h-[calc(100vh-3.5rem)] bg-[#0a0a0a] border-l border-slate-800 transition-all duration-300 z-[9999] shadow-2xl w-[280px] overflow-hidden"
         dir="rtl"
       >
-        <div className="w-[280px] flex flex-col h-full font-sans">
+        <div className="w-full flex flex-col h-full font-sans">
           
           <div className="p-6 border-b border-slate-800/50 flex items-center gap-4 bg-[#0f0f0f]">
             <div className="bg-blue-600/20 p-2 rounded-lg">
@@ -89,7 +90,7 @@ const EmergencySidebar = ({ isOpen }) => {
             </div>
           </div>
 
-          {/* إضافة كلاس no-scrollbar هنا */}
+          {/* قائمة الروابط والملاحة التكتيكية */}
           <nav className="flex-1 p-4 space-y-1.5 overflow-y-auto no-scrollbar text-right">
             {navLinks.map((link) => {
               const isActive = location.pathname === link.path;
@@ -152,9 +153,10 @@ const EmergencySidebar = ({ isOpen }) => {
                   <span className={`text-[15px] ${isActive ? 'font-bold' : 'font-medium'}`}>
                     {link.name}
                   </span>
-                  {link.path === '/MedicalHistoryView' && (
+                  
+                  {(link.path === '/MedicalHistoryView' || link.path === '/EmergencyReports') && (
                     <div className="mr-auto">
-                      <span className="flex h-2 w-2 rounded-full bg-red-500 animate-ping"></span>
+                      <span className={`flex h-2 w-2 rounded-full ${link.path === '/EmergencyReports' ? 'bg-emerald-500 animate-pulse' : 'bg-red-500 animate-ping'}`}></span>
                     </div>
                   )}
                 </Link>
@@ -165,7 +167,7 @@ const EmergencySidebar = ({ isOpen }) => {
           <div className="p-4 bg-[#0a0a0a] border-t border-slate-800">
             <button 
               onClick={() => setShowExitConfirm(true)}
-        style={{cursor:"pointer"}}
+              style={{cursor:"pointer"}}
               className="w-full flex items-center justify-center gap-3 py-3 bg-slate-900 text-slate-300 hover:bg-red-600 hover:text-white transition-all rounded-xl font-bold text-[14px]"
             >
               <LogOut size={18} />
@@ -181,10 +183,8 @@ const EmergencySidebar = ({ isOpen }) => {
             <h3 className="text-white text-xl font-bold mb-2">تأكيد الخروج</h3>
             <p className="text-slate-400 text-sm mb-8 font-medium">سيتم إنهاء الجلسة الحالية وإيقاف المتابعة.</p>
             <div className="flex gap-3">
-              <button         style={{cursor:"pointer"}}
- onClick={() => setShowExitConfirm(false)} className="flex-1 py-3 bg-slate-800 text-white rounded-xl font-bold hover:bg-slate-700 transition-all">تراجع</button>
-              <button         style={{cursor:"pointer"}}
- onClick={handleLogout} className="flex-1 py-3 bg-red-600 text-white rounded-xl font-bold hover:bg-red-700 transition-all">خروج</button>
+              <button style={{cursor:"pointer"}} onClick={() => setShowExitConfirm(false)} className="flex-1 py-3 bg-slate-800 text-white rounded-xl font-bold hover:bg-slate-700 transition-all">تراجع</button>
+              <button style={{cursor:"pointer"}} onClick={handleLogout} className="flex-1 py-3 bg-red-600 text-white rounded-xl font-bold hover:bg-red-700 transition-all">خروج</button>
             </div>
           </div>
         </div>

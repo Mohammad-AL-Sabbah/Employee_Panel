@@ -1,0 +1,38 @@
+{
+  "common": {
+    "dashboard": "لوحة التحكم",
+    "back": "رجوع",
+    "all": "الكل",
+    "export_excel": "تصدير Excel",
+    "export_selected": "تصدير المحدد",
+    "search_placeholder": "ابحث برقم البلاغ، العنوان، أو التفاصيل...",
+    "filter_results": "تصفية النتائج",
+    "loading": "جاري تحميل سجل البلاغات...",
+    "no_details": "لا توجد تفاصيل",
+    "undefined": "غير محدد",
+    "delete_confirm": "هل أنت متأكد من حذف هذا البلاغ نهائياً؟",
+    "delete_error": "حدث خطأ أثناء محاولة حذف البلاغ."
+  },
+  "reports": {
+    "title": "إدارة البلاغات الواردة",
+    "breadcrumb": "سجل البلاغات الكامل",
+    "status": {
+      "pending": "قيد الانتظار",
+      "in_progress": "قيد المعالجة",
+      "completed": "مكتمل",
+      "rejected": "مرفوض",
+      "Assigned": "مسند"
+    },
+    "table": {
+      "id": "المعرف",
+      "subject": "عنوان البلاغ",
+      "details": "التفاصيل",
+      "category": "النوع",
+      "status": "الحالة",
+      "actions": "الإجراءات"
+    },
+    "pagination": {
+      "display": "عرض {{from}} إلى {{to}} من أصل {{total}} بلاغ"
+    }
+  }
+}

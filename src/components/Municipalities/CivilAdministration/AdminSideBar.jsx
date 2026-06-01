@@ -3,7 +3,8 @@ import { NavLink, Link, useLocation, useNavigate } from 'react-router-dom';
 import { 
   LayoutGrid, AlertCircle, Users, Settings, LogOut, 
   ChevronLeft, ShieldCheck, Home, Wrench, FileClock, 
-  UserCheck, Ticket, ChevronDown, UserCog
+  UserCheck, Ticket, ChevronDown, UserCog,
+  Megaphone, Layout, PlusCircle
 } from 'lucide-react';
 import ApiAuthToken from '../../../Api/ApiAuthToken';
 
@@ -146,6 +147,7 @@ const AdminSideBar = () => {
       sessionStorage.removeItem('userName');
       // التوجيه إلى صفحة login
       navigate('/login');
+      console.trace("Logout Triggered From Here");
     }
   };
 
@@ -168,7 +170,7 @@ const AdminSideBar = () => {
         <p className="text-[10px] font-black text-slate-400 mb-2 px-3 mt-6 uppercase tracking-[0.15em]">الإدارة التشغيلية</p>
         <SidebarItem icon={AlertCircle} label="إدارة البلاغات" to="/reports" hasArrow />
         <SidebarItem icon={Wrench} label="فرق الصيانة" to="/teams" hasArrow />
-        <SidebarItem icon={Users} label="قاعدة المواطنين" to="/users" hasArrow />
+        <SidebarItem icon={Users} label="قاعدة المستخدمين" to="/users" hasArrow />
 
         <CollapsibleSidebarItem 
           icon={UserCog} 
@@ -179,6 +181,15 @@ const AdminSideBar = () => {
             { icon: Users, label: "إدارة الموظفين", to: "/ManageStaff" }, 
           ]} 
         />
+
+        <CollapsibleSidebarItem 
+  icon={Megaphone} 
+  label="إعلانات البلدية" 
+  items={[
+    { icon: Layout, label: "عرض كافة الإعلانات", to: "/AllAds" },
+    { icon: PlusCircle, label: "إضافة إعلان جديد", to: "/CreateAd" },
+  ]} 
+/>
 
         <p className="text-[10px] font-black text-slate-400 mb-2 px-3 mt-6 uppercase tracking-[0.15em]">الدعم والنظام</p>
         <SidebarItem icon={Ticket} label="تذاكر الدعم" to="/SupportTickets" hasArrow />

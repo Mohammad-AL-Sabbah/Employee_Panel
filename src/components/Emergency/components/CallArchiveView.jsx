@@ -7,7 +7,6 @@ import {
 } from 'lucide-react';
 import * as XLSX from 'xlsx'; // تأكد من تثبيت المكتبة عبر npm install xlsx
 
-import EmergencyHeader from './EmergencyHeader';
 import EmergencySidebar from './EmergencySidebar';
 
 const CallArchiveView = () => {
@@ -85,7 +84,7 @@ const CallArchiveView = () => {
         .row-hover:hover { background-color: rgba(30, 41, 59, 0.3) !important; }
       `}</style>
 
-      <EmergencyHeader pageTitle="أرشيف بلاغات فلسطين" />
+    
 
       <div className="flex flex-1 overflow-hidden">
         <aside className="w-64 h-full flex-shrink-0 border-l border-slate-800 bg-[#050505] z-50">

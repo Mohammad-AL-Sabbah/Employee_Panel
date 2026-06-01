@@ -36,8 +36,16 @@ import MedicalCentersView from '../components/Emergency/components/MedicalCenter
 import EmergencyCenters from '../components/Emergency/components/EmergencyCenters';
 import EmergencyStaffStatus from '../components/Emergency/components/EmergencyStaffStatus';
 import EmergencyLogin from '../components/Emergency/components/EmergencyLogin';
-
-// --- الطريقة الأضمن لاكتشاف Tauri ---
+import ReportsDetails from '../components/Municipalities/Shared/ReportsDetails';
+import ReportDetailsMap from '../components/Municipalities/Shared/ReportDetailsMap';
+import AllAds from '../components/Municipalities/Shared/AllAds';
+import CreateAd from '../components/Municipalities/Shared/CreateAd';
+import ReportsPage from '../pages/Emergency/ReportsPage';
+import EmergencyReportsView from '../components/Emergency/components/EmergencyReportsView';
+import EmergencyMap from '../components/Emergency/components/EmergencyMap';
+import EmergencyReportDetailsMap from '../components/Emergency/components/EmergencyReportDetailsMap';
+import AddFieldUnitView from '../components/Emergency/components/AddFieldUnitView';
+// --- الطريقة الأضمن لاكتشاف Tauri ---s
 // اكتشاف Tauri عبر اسم المحرك (WebView)
 const queryParams = new URLSearchParams(window.location.search);
 const isTauri = queryParams.get('platform') === 'tauri' || !!window.__TAURI_IPC__;;
@@ -66,6 +74,7 @@ const routes = createBrowserRouter([
           { path: 'MainPage', element: <MainPage /> },
           { path: 'ControlPanel', element: <ControlPanel /> },
           { path: 'Reports', element: <Reports /> },
+          { path: 'ReportsDetails', element: <ReportsDetails /> },
           { path: 'teams', element: <MaintenanceTeams /> },
           { path: 'users', element: <ManageUsers /> },
           { path: 'Settings', element: <Settings /> },
@@ -75,6 +84,9 @@ const routes = createBrowserRouter([
           { path: 'StaffStatus', element: <StaffStatus /> },
           { path: 'SupportTickets', element: <SupportTickets /> },
           { path: 'ManageStaff', element: <ManageStaff /> },
+          { path: 'ReportDetailsMap', element: <ReportDetailsMap /> },
+          { path: 'AllAds', element: <AllAds /> },
+          { path: 'CreateAd', element: <CreateAd /> },
         ]
       },
       {
@@ -89,6 +101,12 @@ const routes = createBrowserRouter([
           { path: 'MedicalCentersView', element: <MedicalCentersView /> },
           { path: 'EmergencyCenters', element: <EmergencyCenters /> },
           { path: 'EmergencyStaffStatus', element: <EmergencyStaffStatus /> },
+          { path: 'ReportsPage', element: <ReportsPage /> },
+          {path: 'EmergencyReportsView', element: <EmergencyReportsView /> },
+          {path:'AddFieldUnitView', element: <AddFieldUnitView />}, // إعادة استخدام نفس المكون مع تمييزه في الـ API
+          { path: "EmergencyReportDetailsMap/:reportId", element: <EmergencyReportDetailsMap /> },
+          
+    
         ]
       },
     ]

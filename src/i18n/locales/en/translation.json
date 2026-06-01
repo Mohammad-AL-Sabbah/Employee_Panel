@@ -1,0 +1,17 @@
+{
+  "reports": {
+    "title": "Incoming Reports Management",
+    "status": {
+      "pending": "Pending",
+      "in_progress": "In Progress",
+      "completed": "Completed",
+      "rejected": "Rejected"
+    },
+    "table": {
+      "id": "ID",
+      "subject": "Report Title",
+      "category": "Category",
+      "actions": "Actions"
+    }
+  }
+}

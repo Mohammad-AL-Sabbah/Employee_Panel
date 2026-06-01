@@ -3,457 +3,474 @@ import React, { useState, useEffect } from 'react';
 import { 
   Search, Filter, Download, ArrowRight, 
   Eye, Trash2, CheckCircle, 
-  Clock, AlertTriangle, Loader2, ChevronRight, ChevronLeft,
-  Calendar, CheckSquare, Square, X, MapPin, Image as ImageIcon
+  Clock, AlertTriangle, Loader2, ChevronRight,
+  Calendar, CheckSquare, Square, X, Trash,
+  ClipboardList, RefreshCw, Link2Off, MapPin, Users
 } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import * as XLSX from 'xlsx';
 import ReportsData from './ReportsData';
 import ApiAuthToken from '../../../Api/ApiAuthToken';
+import Swal from 'sweetalert2';
 
 const Reports = () => {
+  const { t, i18n } = useTranslation();
+  const navigate = useNavigate();
+  
   const [reports, setReports] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("الكل");
-  const [sortOrder, setSortOrder] = useState("newest");
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
-  const [totalRecords, setTotalRecords] = useState(0);
   const reportsPerPage = 10;
 
   const [selectedIds, setSelectedIds] = useState([]);
-  
-  const [selectedReport, setSelectedReport] = useState(null);
-  const [showPopup, setShowPopup] = useState(false);
 
-  const fetchReports = async (page = 1) => {
+  // --- States المودال الخاص بعرض تفاصيل مهام الفريق الميداني ---
+  const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
+  const [selectedTeam, setSelectedTeam] = useState(null); 
+  const [assignedReports, setAssignedReports] = useState([]);
+  const [loadingReports, setLoadingReports] = useState(false);
+  const [actionLoading, setActionLoading] = useState(false);
+
+  // جلب البيانات من السيرفر
+  const fetchReportsFromServer = async (page = 1) => {
     setLoading(true);
     try {
       const response = await ApiAuthToken.get(`/Admin/all-reports?pageNumber=${page}&pageSize=${reportsPerPage}`);
-      
-      console.log("Reports API Response:", response.data);
-      
       if (response.data && response.data.data) {
         const reportsData = response.data.data.filter(item => item.id);
         const paginationInfo = response.data.data.find(item => item.totalPages);
         
         setReports(reportsData);
-        
         if (paginationInfo) {
           setTotalPages(paginationInfo.totalPages || 1);
-          setTotalRecords(paginationInfo.totalRecords || reportsData.length);
         }
       }
     } catch (err) {
-      console.error("Error fetching reports:", err);
+      console.error("خطأ في جلب البلاغات:", err);
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    document.title = "إدارة البلاغات | P.S.R.S";
-    fetchReports(currentPage);
+    document.title = `PSRS | إدارة البلاغات`;
+    fetchReportsFromServer(currentPage);
   }, [currentPage]);
 
-  const viewReportDetails = (report) => {
-    setSelectedReport(report);
-    setShowPopup(true);
-    document.body.style.overflow = 'hidden';
+  // دالة فتح المودال وجلب التقارير الخاصة بالفريق
+  const openTeamDetailsModal = async (teamId, teamLeaderName) => {
+    setSelectedTeam({ id: teamId, leader: teamLeaderName });
+    setAssignedReports([]);
+    setIsDetailsModalOpen(true);
+    setLoadingReports(true);
+    try {
+      const response = await ApiAuthToken.get(`/Admin/maintenance-team/${teamId}/assigned-reports`);
+      if (response.data) {
+        setAssignedReports(response.data);
+      }
+    } catch (err) {
+      console.error("Error fetching assigned reports:", err);
+    } finally {
+      setLoadingReports(false);
+    }
   };
 
-  const closePopup = () => {
-    setShowPopup(false);
-    setSelectedReport(null);
-    document.body.style.overflow = 'auto';
-  };
+  // فك ارتباط جميع البلاغات عن الفريق من داخل المودال
+  const handleUnassignReports = async (teamId) => {
+    const confirmResult = await Swal.fire({
+      title: 'هل أنت متأكد؟',
+      text: "سيتم فك ارتباط جميع البلاغات المسندة لهذا الفريق وإعادتها لحالة الانتظار",
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#f59e0b',
+      cancelButtonColor: '#64748b',
+      confirmButtonText: 'نعم، فك الارتباط الجماعي',
+      cancelButtonText: 'تراجع'
+    });
 
-  const handleDelete = async (id) => {
-    if (window.confirm("هل أنت متأكد من حذف هذا البلاغ؟")) {
+    if (confirmResult.isConfirmed) {
+      setActionLoading(true);
       try {
-        await ApiAuthToken.delete(`/Admin/delete-report/${id}`);
-        fetchReports(currentPage);
-        closePopup();
+        await ApiAuthToken.patch(`/Admin/maintenance-team/${teamId}/unassign-reports`);
+        setAssignedReports([]);
+        fetchReportsFromServer(currentPage); 
+        Swal.fire({ icon: 'success', title: 'تم فك ارتباط البلاغات بنجاح', toast: true, position: 'top-end', showConfirmButton: false, timer: 2000 });
       } catch (err) {
-        console.error("Error deleting report:", err);
-        alert("حدث خطأ أثناء حذف البلاغ");
+        Swal.fire({ icon: 'error', title: 'حدث خطأ أثناء فك الارتباط' });
+      } finally {
+        setActionLoading(false);
       }
     }
   };
 
-  // ✅ التصحيح هنا: icon → Icon
-  const getStatusBadge = (status) => {
-    switch (status) {
-      case "Completed":
-        return { label: "مكتمل", color: "bg-emerald-100 text-emerald-700", Icon: CheckCircle };
-      case "InProgress":
-        return { label: "قيد المعالجة", color: "bg-blue-100 text-blue-700", Icon: Clock };
-      case "Pending":
-        return { label: "قيد الانتظار", color: "bg-amber-100 text-amber-700", Icon: AlertTriangle };
-      default:
-        return { label: status || "غير محدد", color: "bg-slate-100 text-slate-700", Icon: AlertTriangle };
+  // فك ارتباط بلاغ فردي واحد من داخل المودال
+  const handleUnassignSingleReport = async (reportId) => {
+    const confirmResult = await Swal.fire({
+      title: 'تأكيد الإجراء',
+      text: `هل أنت متأكد من فك ارتباط البلاغ رقم #${reportId} فقط؟`,
+      icon: 'question',
+      showCancelButton: true,
+      confirmButtonColor: '#ef4444',
+      cancelButtonColor: '#64748b',
+      confirmButtonText: 'نعم، فك الارتباط',
+      cancelButtonText: 'إلغاء'
+    });
+
+    if (confirmResult.isConfirmed) {
+      setActionLoading(true);
+      try {
+        await ApiAuthToken.patch(`/Admin/maintenance-team/unassign-single-report/${reportId}`);
+        setAssignedReports(prev => prev.filter(report => report.id !== reportId));
+        fetchReportsFromServer(currentPage); 
+        Swal.fire({ icon: 'success', title: 'تم فك ارتباط البلاغ بنجاح', toast: true, position: 'top-end', showConfirmButton: false, timer: 2000 });
+      } catch (err) {
+        Swal.fire({ icon: 'error', title: 'فشل فك ارتباط البلاغ المحدّد' });
+      } finally {
+        setActionLoading(false);
+      }
     }
   };
 
-  const formatDate = (dateString) => {
-    if (!dateString) return "غير محدد";
-    const date = new Date(dateString);
-    return date.toLocaleDateString('ar-EG', {
-      year: 'numeric',
-      month: 'numeric',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
+  const goToDetails = (reportId) => {
+    navigate('/ReportDetailsMap', { state: { reportId } });
+  };
+
+  const deleteSingleReport = async (id) => {
+    const confirmResult = await Swal.fire({
+      title: 'هل أنت متأكد؟',
+      text: "سيتم حذف هذا البلاغ نهائياً من النظام",
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#ef4444',
+      cancelButtonColor: '#64748b',
+      confirmButtonText: 'نعم، احذف الآن',
+      cancelButtonText: 'تراجع'
     });
+
+    if (confirmResult.isConfirmed) {
+      try {
+        await ApiAuthToken.delete(`/Admin/delete-report/${id}`);
+        fetchReportsFromServer(currentPage);
+        setSelectedIds(prev => prev.filter(item => item !== id));
+        Swal.fire({ icon: 'success', title: 'تم الحذف بنجاح', toast: true, position: 'top-end', showConfirmButton: false, timer: 2000 });
+      } catch (err) {
+        Swal.fire({ icon: 'error', title: 'فشل عملية الحذف' });
+      }
+    }
+  };
+
+  const deleteSelectedReports = async () => {
+    const confirmResult = await Swal.fire({
+        title: `حذف ${selectedIds.length} بلاغ؟`,
+        text: "هذا الإجراء سيقوم بمسح جميع البلاغات المحددة ولا يمكن التراجع عنه",
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#ef4444',
+        confirmButtonText: 'تأكيد الحذف الجماعي',
+        cancelButtonText: 'إلغاء'
+    });
+
+    if (confirmResult.isConfirmed) {
+        setLoading(true);
+        try {
+            await Promise.all(selectedIds.map(id => ApiAuthToken.delete(`/Admin/delete-report/${id}`)));
+            setSelectedIds([]);
+            fetchReportsFromServer(currentPage);
+            Swal.fire({ icon: 'success', title: 'تم حذف البلاغات المحددة بنجاح' });
+        } catch (err) {
+            Swal.fire({ icon: 'error', title: 'حدث خطأ أثناء الحذف الجماعي' });
+        } finally {
+            setLoading(false);
+        }
+    }
+  };
+
+  const getStatusInfo = (status) => {
+    const normalizedStatus = status?.trim();
+    const statusMap = {
+      'Pending': { label: 'قيد الانتظار', color: "bg-amber-100 text-amber-700", Icon: AlertTriangle },
+      'InProgress': { label: 'قيد العمل', color: "bg-blue-100 text-blue-700", Icon: Clock },
+      'Resolved': { label: 'مُنجز', color: "bg-emerald-100 text-emerald-700", Icon: CheckCircle },
+      'Rejected': { label: 'مرفوض', color: "bg-rose-100 text-rose-700", Icon: X },
+      'Assigned': { label: 'مُسنَد', color: "bg-violet-100 text-violet-700", Icon: CheckCircle }
+    };
+    return statusMap[normalizedStatus] || { label: 'قيد الانتظار', color: "bg-amber-100 text-amber-700", Icon: AlertTriangle };
+  };
+
+  const formatDate = (dateString) => {
+    if (!dateString) return '---';
+    const date = new Date(dateString);
+    return date.toLocaleDateString('ar-PS', { year: 'numeric', month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' });
   };
 
   const filteredReports = reports.filter(report => {
     const searchLower = searchTerm.toLowerCase().trim();
-    const reportStatus = getStatusBadge(report.status).label;
-    const matchesStatus = statusFilter === "الكل" || reportStatus === statusFilter;
+    const statusInfo = getStatusInfo(report.status);
+    const matchesStatus = statusFilter === "الكل" || statusInfo.label === statusFilter;
     
     let matchesSearch = true;
     if (searchLower) {
-      matchesSearch = report.id?.toString().includes(searchLower) || 
-                      report.title?.toLowerCase().includes(searchLower) || 
-                      report.description?.toLowerCase().includes(searchLower);
+      matchesSearch = report.id?.toString().includes(searchLower) || report.title?.toLowerCase().includes(searchLower);
     }
     return matchesStatus && matchesSearch;
   });
 
-  const sortedReports = [...filteredReports].sort((a, b) => {
-    const dateA = new Date(a.createdAt);
-    const dateB = new Date(b.createdAt);
-    return sortOrder === "newest" ? dateB - dateA : dateA - dateB;
-  });
-
-  const indexOfLastReport = currentPage * reportsPerPage;
-  const indexOfFirstReport = indexOfLastReport - reportsPerPage;
-  const currentReports = sortedReports.slice(indexOfFirstReport, indexOfLastReport);
-  const frontendTotalPages = Math.ceil(sortedReports.length / reportsPerPage);
-
-  const paginate = (pageNumber) => {
-    if (pageNumber >= 1 && pageNumber <= (totalPages > 1 ? totalPages : frontendTotalPages)) {
-      setCurrentPage(pageNumber);
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-    }
-  };
-
-  const handleExportExcel = () => {
-    const dataToProcess = selectedIds.length > 0 
-      ? reports.filter(r => selectedIds.includes(r.id)) 
-      : sortedReports;
-
-    const dataToExport = dataToProcess.map(report => ({
+  const exportToExcel = () => {
+    const dataToProcess = selectedIds.length > 0 ? reports.filter(r => selectedIds.includes(r.id)) : filteredReports;
+    const excelData = dataToProcess.map(report => ({
       "رقم البلاغ": report.id,
-      "عنوان البلاغ": report.title,
-      "تفاصيل البلاغ": report.description,
-      "نوع البلاغ": report.categoryName,
-      "حالة البلاغ": getStatusBadge(report.status).label,
-      "تاريخ البلاغ": formatDate(report.createdAt),
-      "الموقع": `${report.latitude}, ${report.longitude}`
-    }));
+      "العنوان": report.title,
+      "القسم": report.categoryName,
+      "الحالة": getStatusInfo(report.status).label,
+      "التاريخ": formatDate(report.createdAt),
+      "الفريق المُسنَد": report.assignedTeamName || '---'
     
-    const worksheet = XLSX.utils.json_to_sheet(dataToExport);
+    }));
+    const worksheet = XLSX.utils.json_to_sheet(excelData);
     const workbook = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(workbook, worksheet, "Reports");
-    XLSX.writeFile(workbook, `PSRS_Reports_${new Date().toLocaleDateString()}.xlsx`);
+    XLSX.writeFile(workbook, `PSRS_Reports_Export.xlsx`);
   };
-
-  const toggleSelect = (id) => {
-    setSelectedIds(prev => 
-      prev.includes(id) ? prev.filter(item => item !== id) : [...prev, id]
-    );
-  };
-
-  const displayedPages = totalPages > 1 ? totalPages : frontendTotalPages;
-  const currentTotalRecords = totalRecords > 0 ? totalRecords : sortedReports.length;
 
   return (
-    <div className="p-8 w-full bg-[#f8fafc] min-h-screen animate-in fade-in duration-500" dir="rtl">
+    <div className="p-8 w-full bg-[#f8fafc] min-h-screen" dir="rtl">
       <ReportsData />
 
+      {/* الرأس - Header */}
       <div className="mt-8 flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
         <div>
           <div className="flex items-center gap-2 text-slate-400 mb-2 text-xs font-bold">
             <Link to="/ControlPanel" className="hover:text-emerald-600 transition-colors">لوحة التحكم</Link>
             <ChevronRight size={14} />
-            <span className="text-slate-800">سجل البلاغات الكامل</span>
+            <span className="text-slate-800">إدارة البلاغات</span>
           </div>
-          <h2 className="text-3xl font-black text-slate-800 tracking-tight">إدارة البلاغات الواردة</h2>
+          <h2 className="text-3xl font-black text-slate-800 tracking-tight">سجل البلاغات الذكي</h2>
         </div>
 
-        <div className="flex gap-3">
-          <button onClick={handleExportExcel} className="cursor-pointer flex items-center gap-2 bg-white border border-slate-200 text-slate-700 px-4 py-2.5 rounded-xl text-sm font-bold shadow-sm hover:bg-slate-50 transition-all active:scale-95">
+        <div className="flex flex-wrap gap-3">
+          {selectedIds.length > 0 && (
+            <button 
+              onClick={deleteSelectedReports}
+              className="cursor-pointer flex items-center gap-2 bg-rose-50 border border-rose-100 text-rose-600 px-4 py-2.5 rounded-xl text-sm font-bold shadow-sm hover:bg-rose-600 hover:text-white transition-all animate-in fade-in"
+            >
+              <Trash size={18} />
+              حذف المحدد ({selectedIds.length})
+            </button>
+          )}
+
+          <button onClick={exportToExcel} className="cursor-pointer flex items-center gap-2 bg-white border border-slate-200 text-slate-700 px-4 py-2.5 rounded-xl text-sm font-bold shadow-sm hover:bg-slate-50 transition-all">
             <Download size={18} className="text-emerald-600" />
-            {selectedIds.length > 0 ? `تصدير المحدد (${selectedIds.length})` : "تصدير Excel"}
+            تصدير البيانات
           </button>
-          <Link to="/ControlPanel" className="flex items-center gap-2 bg-slate-900 text-white px-5 py-2.5 rounded-xl text-sm font-bold hover:bg-emerald-600 transition-all shadow-lg active:scale-95">
+          
+          <Link to="/ControlPanel" className="flex items-center gap-2 bg-slate-900 text-white px-5 py-2.5 rounded-xl text-sm font-bold hover:bg-emerald-600 transition-all">
             <ArrowRight size={18} />
             رجوع
           </Link>
         </div>
       </div>
 
+      {/* البحث والفلترة */}
       <div className="bg-white p-6 rounded-[2.5rem] border border-slate-100 shadow-sm mb-8 space-y-6">
         <div className="relative w-full">
           <Search className="absolute right-5 top-1/2 -translate-y-1/2 text-slate-400" size={20} />
           <input 
             type="text" 
-            placeholder="ابحث برقم البلاغ، العنوان، أو التفاصيل..."
-            className="w-full bg-slate-50 border-none rounded-2xl py-4 pr-14 pl-6 text-sm focus:ring-2 focus:ring-emerald-500/20 outline-none transition-all"
+            placeholder="ابحث برقم البلاغ أو العنوان..."
+            className="w-full bg-slate-50 border-none rounded-2xl py-4 pr-14 pl-6 text-sm outline-none focus:ring-2 ring-emerald-500/20 transition-all"
             value={searchTerm}
-            onChange={(e) => {setSearchTerm(e.target.value); setCurrentPage(1);}}
+            onChange={(e) => setSearchTerm(e.target.value)}
           />
         </div>
 
         <div className="flex flex-wrap items-center gap-3">
-          <div className="flex items-center gap-2 text-slate-500 ml-2 font-bold text-[10px] uppercase tracking-wider bg-slate-100 px-3 py-1.5 rounded-lg">
-            <Filter size={14} /> تصفية النتائج
+          <div className="flex items-center gap-2 text-slate-500 font-bold text-[10px] uppercase tracking-wider bg-slate-100 px-3 py-1.5 rounded-lg">
+            <Filter size={14} /> تصفية حسب الحالة
           </div>
-          
-          {[
-            { label: "الكل", value: "الكل" },
-            { label: "مكتمل", value: "Completed" },
-            { label: "قيد المعالجة", value: "InProgress" },
-            { label: "قيد الانتظار", value: "Pending" }
-          ].map((filter) => (
+          {["الكل", "قيد الانتظار", "قيد العمل", "مُنجز", "مرفوض", "مسند"].map((filter) => (
             <button
-              key={filter.label}
-              onClick={() => { setStatusFilter(filter.label); setCurrentPage(1); }}
+              key={filter}
+              onClick={() => { setStatusFilter(filter); setCurrentPage(1); }}
               className={`px-5 py-2 rounded-xl text-xs font-black transition-all cursor-pointer ${
-                statusFilter === filter.label 
-                  ? "bg-slate-800 text-white shadow-lg" 
-                  : "bg-slate-100 text-slate-600 hover:bg-white border border-transparent hover:border-slate-200"
+                statusFilter === filter ? "bg-slate-800 text-white shadow-lg" : "bg-slate-100 text-slate-600 hover:bg-white border border-slate-200"
               }`}
             >
-              {filter.label}
+              {filter}
             </button>
           ))}
         </div>
       </div>
 
-      <div className="bg-white rounded-[2.5rem] border border-slate-100 shadow-xl overflow-hidden shadow-slate-200/50 mb-10">
+      {/* الجدول المعزز بعد التعديل لإضافة عمود الفريق المسؤول */}
+      <div className="bg-white rounded-[2.5rem] border border-slate-100 shadow-xl overflow-hidden mb-10">
         {loading ? (
           <div className="flex flex-col items-center justify-center py-40">
             <Loader2 className="animate-spin text-emerald-500 mb-4" size={48} />
-            <p className="text-slate-500 font-bold">جاري تحميل سجل البلاغات...</p>
+            <p className="text-slate-500 font-bold">جاري تحميل البيانات...</p>
           </div>
         ) : (
-          <>
-            <div className="overflow-x-auto">
-              <table className="w-full text-right border-collapse">
-                <thead>
-                  <tr className="bg-slate-50/50 border-b border-slate-100">
-                    <th className="p-6 w-10"></th>
-                    <th className="p-6 text-sm font-black text-slate-600 uppercase">المعرف</th>
-                    <th className="p-6 text-sm font-black text-slate-600">عنوان البلاغ</th>
-                    <th className="p-6 text-sm font-black text-slate-600">التفاصيل</th>
-                    <th className="p-6 text-sm font-black text-slate-600">النوع</th>
-                    <th className="p-6 text-sm font-black text-slate-600">الحالة</th>
-                    <th className="p-6 text-sm font-black text-slate-600 text-center">الإجراءات</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-50">
-                  {currentReports.map((report) => {
-                    const status = getStatusBadge(report.status);
-                    const StatusIcon = status.Icon;
-                    const isSelected = selectedIds.includes(report.id);
-                    
-                    return (
-                      <tr key={report.id} className="hover:bg-emerald-50/20 transition-all group">
-                        <td className="p-6">
-                          <button onClick={() => toggleSelect(report.id)} className="cursor-pointer text-slate-300 hover:text-emerald-600 transition-colors">
-                            {isSelected ? <CheckSquare size={20} className="text-emerald-600" /> : <Square size={20} />}
+          <div className="overflow-x-auto">
+            <table className="w-full text-right border-collapse">
+              <thead>
+                <tr className="bg-slate-50/50 border-b border-slate-100">
+                  <th className="p-6 w-10">
+                    <button 
+                        onClick={() => setSelectedIds(selectedIds.length === reports.length ? [] : reports.map(r => r.id))}
+                        className="cursor-pointer text-slate-400 hover:text-emerald-600"
+                    >
+                        {selectedIds.length === reports.length && reports.length > 0 ? <CheckSquare size={20} className="text-emerald-600" /> : <Square size={20} />}
+                    </button>
+                  </th>
+                  <th className="p-6 text-sm font-black text-slate-600 uppercase">ID</th>
+                  <th className="p-6 text-sm font-black text-slate-600">الموضوع</th>
+                  <th className="p-6 text-sm font-black text-slate-600">الوصف والتاريخ</th>
+                  <th className="p-6 text-sm font-black text-slate-600">القسم</th>
+                  <th className="p-6 text-sm font-black text-slate-600">الحالة</th>
+                  {/* 🟢 ترويسة العمود الجديد المضاف بالتحديد بجانب الحالة والإجراءات 🟢 */}
+                  <th className="p-6 text-sm font-black text-slate-600">الفريق المسؤول</th>
+                  <th className="p-6 text-sm font-black text-slate-600 text-center">إجراءات</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-50">
+                {filteredReports.map((report) => {
+                  const statusInfo = getStatusInfo(report.status);
+                  const StatusIcon = statusInfo.Icon;
+                  return (
+                    <tr key={report.id} className={`hover:bg-emerald-50/10 transition-all group ${selectedIds.includes(report.id) ? 'bg-emerald-50/30' : ''}`}>
+                      <td className="p-6">
+                        <button onClick={() => setSelectedIds(prev => prev.includes(report.id) ? prev.filter(i => i !== report.id) : [...prev, report.id])} className="cursor-pointer text-slate-300 hover:text-emerald-600">
+                          {selectedIds.includes(report.id) ? <CheckSquare size={20} className="text-emerald-600" /> : <Square size={20} />}
+                        </button>
+                      </td>
+                      <td className="p-6">
+                        <span className="font-mono font-bold text-emerald-600 bg-emerald-50 px-3 py-1.5 rounded-lg border border-emerald-100 text-xs">#{report.id}</span>
+                      </td>
+                      <td className="p-6 font-bold text-slate-800 text-sm">{report.title}</td>
+                      <td className="p-6 max-w-md">
+                        <p className="text-xs text-slate-600 line-clamp-2 italic">"{report.description}"</p>
+                        <div className="flex items-center gap-2 text-[10px] text-slate-400 font-bold mt-1 uppercase">
+                          <Calendar size={10} /> {formatDate(report.createdAt)}
+                        </div>
+                      </td>
+                      <td className="p-6"><span className="text-xs bg-slate-100 px-3 py-1.5 rounded-lg font-bold">{report.categoryName}</span></td>
+                      <td className="p-6">
+                        <div className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-[11px] font-black shadow-sm ${statusInfo.color}`}>
+                          <StatusIcon size={14} /> {statusInfo.label}
+                        </div>
+                      </td>
+                      
+                      {/* 🟢 عمود عرض الفريق المسؤول الجديد والذكي 🟢 */}
+                      <td className="p-6">
+                        {report.assignedTeamName ? (
+                          <button 
+                            onClick={() => openTeamDetailsModal(report.assignedTeamId, report.assignedTeamName || 'قائد الفريق')}
+                            className="inline-flex items-center gap-1.5 text-xs text-violet-600 font-bold hover:text-violet-800 bg-violet-50 hover:bg-violet-100/70 px-3 py-2 rounded-xl transition-all cursor-pointer border border-violet-100"
+                          >
+                            <Users size={12} />
+                            <span>{report.assignedTeamName || `فريق #${report.assignedTeamId}`}</span>
                           </button>
-                        </td>
-                        <td className="p-6">
-                          <span className="font-mono font-bold text-emerald-600 bg-emerald-50 px-3 py-1.5 rounded-lg border border-emerald-100 shadow-sm text-xs">
-                            #{report.id}
+                        ) : (
+                          <span className="text-xs text-slate-400 font-medium italic bg-slate-50 px-3 py-2 rounded-xl border border-slate-100">
+                            لم يتم التحديد
                           </span>
-                        </td>
-                        <td className="p-6">
-                          <p className="text-sm font-bold text-slate-800 leading-relaxed">{report.title || "بدون عنوان"}</p>
-                        </td>
-                        <td className="p-6 max-w-md">
-                          <p className="text-xs text-slate-600 leading-relaxed line-clamp-2">
-                            {report.description || "لا توجد تفاصيل"}
-                          </p>
-                          <div className="flex items-center gap-2 text-[10px] text-slate-400 font-bold mt-1">
-                            <Calendar size={10} /> {formatDate(report.createdAt)}
-                          </div>
-                        </td>
-                        <td className="p-6">
-                          <span className="text-xs text-slate-600 bg-slate-100 px-3 py-1.5 rounded-lg">
-                            {report.categoryName || "غير محدد"}
-                          </span>
-                        </td>
-                        <td className="p-6">
-                          <div className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-[11px] font-black ${status.color}`}>
-                            <StatusIcon size={14} /> {status.label}
-                          </div>
-                        </td>
-                        <td className="p-6">
-                          <div className="flex justify-center gap-2">
-                            <button 
-                              onClick={() => viewReportDetails(report)}
-                              className="p-2.5 bg-blue-50 text-blue-600 rounded-xl hover:bg-blue-600 hover:text-white transition-all active:scale-90 shadow-sm border border-blue-100 cursor-pointer"
-                            >
-                              <Eye size={16} />
-                            </button>
-                            <button 
-                              onClick={() => handleDelete(report.id)}
-                              className="p-2.5 bg-rose-50 text-rose-600 rounded-xl hover:bg-rose-600 hover:text-white transition-all active:scale-90 shadow-sm border border-rose-100 cursor-pointer"
-                            >
-                              <Trash2 size={16} />
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
+                        )}
+                      </td>
 
-            {displayedPages > 1 && (
-              <div className="p-6 bg-slate-50/50 border-t border-slate-100 flex flex-col md:flex-row justify-between items-center gap-4">
-                <div className="text-sm text-slate-500 font-bold">
-                  عرض <span className="text-slate-800">{indexOfFirstReport + 1}</span> إلى{" "}
-                  <span className="text-slate-800">{Math.min(indexOfLastReport, sortedReports.length)}</span> من أصل{" "}
-                  <span className="text-slate-800">{currentTotalRecords}</span> بلاغ
-                </div>
-                
-                <div className="flex items-center gap-2">
-                  <button 
-                    onClick={() => paginate(currentPage - 1)}
-                    disabled={currentPage === 1}
-                    className="p-2 rounded-lg border border-slate-200 bg-white text-slate-600 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-slate-50 transition-all cursor-pointer"
-                  >
-                    <ChevronRight size={20} />
-                  </button>
-                  
-                  <div className="flex items-center gap-1">
-                    {[...Array(displayedPages)].map((_, index) => (
-                      <button
-                        key={index + 1}
-                        onClick={() => paginate(index + 1)}
-                        className={`w-10 h-10 rounded-lg text-sm font-black transition-all cursor-pointer ${
-                          currentPage === index + 1 
-                            ? "bg-emerald-600 text-white shadow-lg shadow-emerald-200" 
-                            : "bg-white border border-slate-200 text-slate-600 hover:bg-slate-50"
-                        }`}
-                      >
-                        {index + 1}
-                      </button>
-                    ))}
-                  </div>
-
-                  <button 
-                    onClick={() => paginate(currentPage + 1)}
-                    disabled={currentPage === displayedPages}
-                    className="p-2 rounded-lg border border-slate-200 bg-white text-slate-600 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-slate-50 transition-all cursor-pointer"
-                  >
-                    <ChevronLeft size={20} />
-                  </button>
-                </div>
-              </div>
-            )}
-          </>
+                      <td className="p-6">
+                        <div className="flex justify-center gap-2">
+                          <button onClick={() => goToDetails(report.id)} className="cursor-pointer p-2.5 bg-blue-50 text-blue-600 rounded-xl hover:bg-blue-600 hover:text-white transition-all"><Eye size={16} /></button>
+                          <button onClick={() => deleteSingleReport(report.id)} className="cursor-pointer p-2.5 bg-rose-50 text-rose-600 rounded-xl hover:bg-rose-600 hover:text-white transition-all"><Trash2 size={16} /></button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
         )}
       </div>
 
-      {/* Popup لعرض التفاصيل */}
-      {showPopup && selectedReport && (
-        <div 
-          className="fixed inset-0 bg-black/50 backdrop-blur-md z-50 flex items-center justify-center p-4"
-          onClick={closePopup}
-        >
-          <div 
-            className="bg-white rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto shadow-2xl animate-in fade-in zoom-in duration-300"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="sticky top-0 bg-gradient-to-r from-emerald-600 to-emerald-800 p-6 text-white rounded-t-2xl">
-              <button 
-                onClick={closePopup}
-                className="absolute left-4 top-4 p-2 bg-white/20 hover:bg-white/30 rounded-xl transition-all cursor-pointer"
-              >
-                <X size={18} />
-              </button>
-              <h2 className="text-xl font-bold pr-8">تفاصيل البلاغ #{selectedReport.id}</h2>
-              <div className="flex items-center gap-2 mt-2">
-                {(() => {
-                  const status = getStatusBadge(selectedReport.status);
-                  const StatusIcon = status.Icon;
-                  return <StatusIcon size={14} className="text-white/80" />;
-                })()}
-                <span className="text-white/80 text-sm">{getStatusBadge(selectedReport.status).label}</span>
+      {/* مودال تفاصيل البلاغات المسندة المدمج بدون أي عناصر واجهة إضافية غير مرغوبة */}
+      {isDetailsModalOpen && selectedTeam && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-slate-900/50 backdrop-blur-sm" onClick={() => setIsDetailsModalOpen(false)} />
+          <div className="bg-white w-full max-w-2xl rounded-[2.5rem] shadow-2xl relative z-10 overflow-hidden animate-in zoom-in duration-300">
+            <div className="bg-slate-900 px-8 py-6 text-white flex justify-between items-center">
+              <div className="flex items-center gap-3">
+                <ClipboardList className="text-emerald-400" size={24} />
+                <div>
+                  <h2 className="text-lg font-black">بلاغات ومهام: {selectedTeam.leader}</h2>
+                  <p className="text-xs text-slate-400">الرمز المعرّف للفريق الميداني: #{selectedTeam.id}</p>
+                </div>
               </div>
+              <button onClick={() => setIsDetailsModalOpen(false)} className="p-2 hover:bg-white/10 rounded-full text-slate-300 cursor-pointer"><X size={20} /></button>
             </div>
 
-            <div className="p-6 space-y-4">
-              <div>
-                <label className="text-[10px] font-bold text-slate-400 uppercase">عنوان البلاغ</label>
-                <p className="text-lg font-bold text-slate-800 mt-1">{selectedReport.title || "بدون عنوان"}</p>
+            <div className="p-8 max-h-[60vh] overflow-y-auto custom-scrollbar">
+              <div className="flex justify-between items-center mb-6">
+                <h3 className="font-bold text-slate-700 text-sm">قائمة المهام الحالية الموكلة للفريق ({assignedReports.length})</h3>
+                {assignedReports.length > 0 && (
+                  <button 
+                    onClick={() => handleUnassignReports(selectedTeam.id)}
+                    disabled={actionLoading}
+                    className="flex items-center gap-2 px-4 py-2 bg-amber-50 text-amber-700 hover:bg-amber-600 hover:text-white rounded-xl text-xs font-black transition-all cursor-pointer disabled:opacity-50"
+                  >
+                    {actionLoading ? <Loader2 size={14} className="animate-spin" /> : <RefreshCw size={14} />}
+                    فك ارتباط جميع البلاغات
+                  </button>
+                )}
               </div>
 
-              <div>
-                <label className="text-[10px] font-bold text-slate-400 uppercase">التفاصيل الكاملة</label>
-                <p className="text-sm text-slate-600 mt-1 leading-relaxed">{selectedReport.description || "لا توجد تفاصيل"}</p>
-              </div>
-
-              <div>
-                <label className="text-[10px] font-bold text-slate-400 uppercase">نوع البلاغ</label>
-                <p className="text-sm text-slate-700 mt-1">{selectedReport.categoryName || "غير محدد"}</p>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="text-[10px] font-bold text-slate-400 uppercase flex items-center gap-1">
-                    <Calendar size={12} /> التاريخ
-                  </label>
-                  <p className="text-sm text-slate-700 mt-1">{formatDate(selectedReport.createdAt)}</p>
+              {loadingReports ? (
+                <div className="flex flex-col items-center justify-center py-12">
+                  <Loader2 size={36} className="animate-spin text-emerald-500 mb-2" />
+                  <p className="text-sm text-slate-400 font-medium">جاري سحب البلاغات من الخادم...</p>
                 </div>
-                <div>
-                  <label className="text-[10px] font-bold text-slate-400 uppercase flex items-center gap-1">
-                    <MapPin size={12} /> الموقع
-                  </label>
-                  <p className="text-sm text-slate-700 mt-1">
-                    {selectedReport.latitude}, {selectedReport.longitude}
-                  </p>
+              ) : assignedReports.length === 0 ? (
+                <div className="text-center py-12 bg-slate-50 rounded-2xl border border-dashed border-slate-200">
+                  <CheckCircle size={40} className="text-emerald-400 mx-auto mb-2" />
+                  <p className="text-slate-500 font-bold text-sm">سجل نظيف! لا يوجد بلاغات موكلة لهذا الفريق حالياً.</p>
                 </div>
-              </div>
-
-              {selectedReport.imageUrl && (
-                <div>
-                  <label className="text-[10px] font-bold text-slate-400 uppercase flex items-center gap-1">
-                    <ImageIcon size={12} /> الصورة المرفقة
-                  </label>
-                  <div className="mt-2 rounded-xl overflow-hidden border border-slate-200">
-                    <img 
-                      src={selectedReport.imageUrl} 
-                      alt="Report" 
-                      className="w-full max-h-64 object-contain"
-                    />
-                  </div>
+              ) : (
+                <div className="space-y-3">
+                  {assignedReports.map((report) => (
+                    <div key={report.id} className="p-4 bg-slate-50 border border-slate-200 rounded-2xl flex justify-between items-center hover:bg-white hover:shadow-md transition-all">
+                      <div className="text-right flex-1">
+                        <h4 className="font-bold text-slate-800 text-sm mb-1">#{report.id} - {report.title}</h4>
+                        <p className="text-xs text-slate-400 line-clamp-1 mb-2">{report.description}</p>
+                        <div className="flex items-center gap-3 text-[11px] font-bold text-slate-500">
+                          <span className="bg-slate-200/60 px-2 py-0.5 rounded">{report.categoryName}</span>
+                          <span className="flex items-center gap-1"><MapPin size={10} /> {report.latitude?.toFixed(4)}, {report.longitude?.toFixed(4)}</span>
+                        </div>
+                      </div>
+                      
+                      <div className="flex items-center gap-3">
+                        <span className="px-3 py-1 bg-amber-100 text-amber-700 font-black text-[10px] rounded-lg">
+                          {getStatusInfo(report.status).label}
+                        </span>
+                        
+                        <button
+                          onClick={() => handleUnassignSingleReport(report.id)}
+                          disabled={actionLoading}
+                          title="فك ارتباط هذا البلاغ فقط"
+                          className="p-2 bg-rose-50 text-rose-600 hover:bg-rose-600 hover:text-white rounded-xl transition-all cursor-pointer opacity-100 disabled:opacity-50"
+                        >
+                          <Link2Off size={16} />
+                        </button>
+                      </div>
+                    </div>
+                  ))}
                 </div>
               )}
             </div>
-
-            <div className="p-6 border-t border-slate-100 flex justify-end gap-3">
-              <button 
-                onClick={closePopup}
-                className="px-6 py-2 text-sm font-bold text-slate-600 hover:bg-slate-100 rounded-xl transition-all cursor-pointer"
-              >
-                إغلاق
-              </button>
-              <button 
-                onClick={() => handleDelete(selectedReport.id)}
-                className="px-6 py-2 text-sm font-bold bg-rose-50 text-rose-600 hover:bg-rose-600 hover:text-white rounded-xl transition-all cursor-pointer"
-              >
-                حذف البلاغ
-              </button>
+            
+            <div className="px-8 py-4 bg-slate-50 border-t border-slate-100 flex justify-end">
+              <button onClick={() => setIsDetailsModalOpen(false)} className="px-6 py-2.5 bg-slate-200 text-slate-700 hover:bg-slate-300 font-bold text-xs rounded-xl cursor-pointer transition-all">إغلاق</button>
             </div>
           </div>
         </div>

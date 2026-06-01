@@ -4,9 +4,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { ChevronRight, ChevronLeft } from 'lucide-react';
 import EmergencySidebar from './EmergencySidebar';
 import EmergencyMap from './EmergencyMap';
-import EmergencyHeader from './EmergencyHeader';
 import ConnectionAlert from './ConnectionAlert';
-import WeatherPanel from './WeatherPanel';
+import WeatherPanel from './EmergencyReportsPanel';
 
 const EmergencyDashboard = () => {
   const [isRightSidebarOpen, setIsRightSidebarOpen] = useState(true);
@@ -37,8 +36,6 @@ const EmergencyDashboard = () => {
   return (
     <div className="h-screen w-full bg-black text-slate-200 overflow-hidden flex flex-col font-sans" dir="rtl">
       
-      {/* الهيدر العلوي */}
-      <EmergencyHeader />
 
       {/* تنبيه انقطاع الاتصال */}
       <ConnectionAlert isDisconnected={!isOnline} />

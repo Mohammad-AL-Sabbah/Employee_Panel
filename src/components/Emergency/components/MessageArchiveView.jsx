@@ -7,7 +7,6 @@ import {
 } from 'lucide-react';
 import * as XLSX from 'xlsx';
 
-import EmergencyHeader from './EmergencyHeader';
 import EmergencySidebar from './EmergencySidebar';
 
 const MessageArchiveView = () => {
@@ -67,7 +66,6 @@ const MessageArchiveView = () => {
         .truncate-text { display: -webkit-box; -webkit-line-clamp: 1; -webkit-box-orient: vertical; overflow: hidden; }
       `}</style>
 
-      <EmergencyHeader pageTitle="أرشيف الرسائل والبلاغات الرقمية" />
 
       <div className="flex flex-1 overflow-hidden">
         <aside className="w-64 h-full flex-shrink-0 border-l border-slate-800 bg-[#050505] z-50">
