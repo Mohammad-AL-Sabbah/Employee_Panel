@@ -42,7 +42,7 @@ function AdminControlPanel() {
         <h2 className="text-2xl font-bold text-slate-800">لوحة الإدارة والدعم الفني</h2>
       </div>
 
-      <div className="grid grid-cols-12 gap-8">
+      <div className="grid grid-cols-8 gap-8">
         {/* الجزء الأيمن الرئيسي */}
         <div className="col-span-12 lg:col-span-9 space-y-8">
           
@@ -115,30 +115,7 @@ function AdminControlPanel() {
           </div>
         </div>
 
-        {/* الجزء الأيسر الجانبي */}
-        <div className="col-span-12 lg:col-span-3 space-y-6">
-          <div className="bg-white rounded-3xl p-6 border border-slate-200 shadow-sm hover:shadow-md transition-shadow">
-            <div className="flex items-center gap-2 text-emerald-600 mb-5 font-bold text-xs uppercase tracking-tight">
-              <Clock size={16} /> حالة النظام 
-            </div>
-            <p className="text-2xl font-black text-slate-800 tracking-tighter mb-1">متصل الآن</p>
-            <p className="text-slate-400 text-[11px]">جميع الخوادم تعمل بكفاءة</p>
-          </div>
-
-          <div className="bg-white rounded-3xl p-6 border border-slate-200 shadow-sm hover:shadow-md transition-shadow">
-            <div className="flex justify-between items-center mb-6">
-              <div className="flex items-center gap-2 text-emerald-600 font-bold text-xs"><LifeBuoy size={16} /> تذاكر الدعم</div>
-              <span className="bg-red-500 text-white text-[10px] px-2 py-0.5 rounded font-bold animate-pulse">02</span>
-            </div>
-            <div className="space-y-6">
-              <div className="pr-4 border-r-2 border-red-500 text-right cursor-pointer hover:bg-slate-50 p-1 rounded-l transition-colors"
-                   onClick={() => toast.info('تفاصيل التذكرة', { description: 'الموظف سليم يبلغ عن تعطل ميزة تحديد المواقع في حي رفيديا.' })}>
-                <p className="text-[11px] font-bold text-slate-800">مشكلة في الخريطة</p>
-                <p className="text-[10px] text-slate-400 mt-1">مرسلة من: م. سليم</p>
-              </div>
-            </div>
-          </div>
-        </div>
+      
       </div>
     </div>
   );
