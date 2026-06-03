@@ -1,41 +1,78 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { 
   Bell, User, ChevronDown, Clock, CloudSun, MapPin, 
   CloudRain, Sun, Cloud, Loader2 
 } from 'lucide-react';
+import ApiAuthToken from '../../../Api/ApiAuthToken'; // تأكد من صحة المسار حسب مشروعك
 
 const Header = () => {
-  // ✅ التعديل هنا: استخدام sessionStorage بدلاً من localStorage
+  const navigate = useNavigate();
   const [userName, setUserName] = useState("");
   const [userRole, setUserRole] = useState("");
+  const [userImage, setUserImage] = useState("");
   
   const [currentTime, setCurrentTime] = useState(new Date());
   const [weather, setWeather] = useState({ temp: 18, desc: "صافٍ", icon: 'Clear' });
   const [loadingWeather, setLoadingWeather] = useState(true);
 
-  // قراءة البيانات من sessionStorage عند تحميل المكون
+  // 1. دالة جلب البيانات من الـ API وتحديث الـ sessionStorage
+  const fetchHeaderProfile = async () => {
+    try {
+      // جلب الدور الحسابي من الـ sessionStorage لأنه لا يأتي من الـ profile API عادةً
+      const role = sessionStorage.getItem("userRole");
+      setUserRole(role || "moff");
+
+      // جلب البيانات مباشرة من الـ API المخصص الذي أرسلته
+      const response = await ApiAuthToken.get('/Admin/display-profile');
+      
+      if (response.data) {
+        const { fullName, profilePictureUrl } = response.data;
+        
+        // تحديث الـ State لتظهر الصورة والاسم فوراً
+        setUserName(fullName || "صالح خالد");
+        setUserImage(profilePictureUrl || "");
+
+        // تحديث الـ sessionStorage لضمان بقاء البيانات متزامنة في النظام
+        sessionStorage.setItem("userName", fullName || "");
+        if (profilePictureUrl) {
+          sessionStorage.setItem("profilePictureUrl", profilePictureUrl);
+        }
+      }
+    } catch (error) {
+      console.error("خطأ في جلب بيانات الهيدر:", error);
+      // fallback: إذا فشل الـ API نقرأ من الـ sessionStorage كخطة بديلة
+      setUserName(sessionStorage.getItem("userName") || "صالح خالد");
+      setUserImage(sessionStorage.getItem("profilePictureUrl") || "");
+      setUserRole(sessionStorage.getItem("userRole") || "moff");
+    }
+  };
+
+  // 2. تحميل البيانات عند أول ظهور للمكون + الاستماع للحدث المخصص عند التعديل
   useEffect(() => {
-    const name = sessionStorage.getItem("userName");
-    const role = sessionStorage.getItem("userRole");
-    
-    setUserName(name || "موظف");
-    setUserRole(role || "موظف");
+    fetchHeaderProfile();
+
+    // الاستماع لحدث التحديث الحي من صفحة الإعدادات
+    window.addEventListener('profileUpdated', fetchHeaderProfile);
+
+    return () => {
+      window.removeEventListener('profileUpdated', fetchHeaderProfile);
+    };
   }, []);
 
-  // 1. تحديث الوقت كل دقيقة
+  // 3. تحديث الوقت كل دقيقة
   useEffect(() => {
     const timer = setInterval(() => setCurrentTime(new Date()), 60000);
     return () => clearInterval(timer);
   }, []);
 
-  // 2. جلب حالة الطقس مع معالجة ذكية للأخطاء
+  // 4. جلب حالة الطقس
   useEffect(() => {
     const fetchWeather = async () => {
       setLoadingWeather(true);
       try {
         const lat = 32.2211;
         const lon = 35.2544;
-        
         const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current_weather=true`;
         
         const response = await fetch(url);
@@ -67,7 +104,6 @@ const Header = () => {
     }
   };
 
-  // ترجمة الدور إلى العربية
   const getRoleLabel = (role) => {
     switch(role) {
       case "SuperAdmin": return "مدير عام";
@@ -82,10 +118,27 @@ const Header = () => {
       
       {/* القسم الأيمن: المستخدم */}
       <div className="flex items-center gap-6">
-        <div className="flex items-center gap-3 cursor-pointer group">
+        <div 
+          onClick={() => navigate('/settings')} 
+          className="flex items-center gap-3 cursor-pointer group"
+        >
           <div className="relative">
-            <div className="w-10 h-10 bg-gradient-to-br from-emerald-50 to-emerald-100 rounded-2xl border border-emerald-200 flex items-center justify-center shadow-sm group-hover:shadow-emerald-200 transition-all duration-300">
-              <User size={20} className="text-emerald-600" />
+            <div className="w-10 h-10 rounded-2xl border border-emerald-200 overflow-hidden flex items-center justify-center shadow-sm group-hover:shadow-emerald-200 transition-all duration-300 bg-gradient-to-br from-emerald-50 to-emerald-100">
+              {userImage ? (
+                <img 
+                  src={userImage} 
+                  alt={userName} 
+                  className="w-full h-full object-cover"
+                  onError={(e) => {
+                    // إذا كان الرابط مكسوراً أو المسار يحتاج Base URL
+                    e.target.onerror = null; 
+                    e.target.src = ""; // يفرغ السورس ليعود للـ fallback (أيقونة المستخدم)
+                    setUserImage("");
+                  }}
+                />
+              ) : (
+                <User size={20} className="text-emerald-600" />
+              )}
             </div>
             <span className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 bg-emerald-500 rounded-full border-2 border-white"></span>
           </div>

@@ -195,7 +195,7 @@ export default function MaintenanceTeams() {
     if (window.confirm(`تنبيه خطير: سيتم حذف الفريق "${teamName}" وحساب البريد الإلكتروني الخاص به نهائياً. هل تريد الاستمرار؟`)) {
       setActionLoading(true);
       try {
-        const response = await ApiAuthToken.delete(`/Admin/hard-delete-team/${id}`);
+        const response = await ApiAuthToken.delete(`/Admin/hard-delete-maintenanceteam/${id}`);
         if (response.status === 200) {
           fetchTeams();
           setIsEditModalOpen(false);

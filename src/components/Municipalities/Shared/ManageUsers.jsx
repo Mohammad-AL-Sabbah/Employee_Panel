@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { 
   Users as UsersIcon, Search, ShieldCheck, MapPin, 
   Smartphone, Eye, Ban, SearchX, Lock, Unlock, Loader2,
-  ChevronLeft, ChevronRight, X, Mail, Phone, User, Info, Calendar
+  ChevronLeft, ChevronRight, X, Mail, Phone, User, Info, Calendar, Trash2
 } from 'lucide-react';
 import ApiAuthToken from '../../../Api/ApiAuthToken';
 
@@ -89,6 +89,37 @@ const Users = () => {
     } catch (err) {
       console.error("Error toggling ban:", err);
       alert(err.response?.data?.message || "حدث خطأ أثناء تنفيذ العملية");
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
+  // ✅ دالة الحذف النهائي للمواطن المسؤول عنها الـ الـ End-Point المضافة
+  const handleDeleteCitizen = async (userId, userName) => {
+    const confirmDelete = window.confirm(`تنبيه أمني حساس: هل أنت متأكد تماماً من رغبتك في حذف المواطن "${userName}" نهائياً من قاعدة البيانات؟ لا يمكن التراجع عن هذا الإجراء!`);
+    
+    if (!confirmDelete) return;
+
+    setActionLoading(userId);
+    try {
+      const response = await ApiAuthToken.delete(`/Admin/delete-citizen/${userId}`);
+      
+      if (response.status === 200 || response.data.success) {
+        alert("تم حذف حساب المواطن نهائياً وبنجاح من النظام.");
+        
+        // إغلاق البوب آب فوراً لو كان معروضاً بداخله
+        if (showPopup && selectedUser?.id === userId) {
+          closePopup();
+        }
+
+        // إزاحة وحذف المستخدم من الـ state محلياً لتحديث الجدول فوراً
+        setUsersData(prev => prev.filter(u => u.id !== userId));
+      } else {
+        alert(response.data.message || "فشلت عملية الحذف، يرجى التحقق من الصلاحيات.");
+      }
+    } catch (err) {
+      console.error("Error deleting citizen:", err);
+      alert(err.response?.data?.message || "حدث خطأ غير متوقع أثناء محاولة حذف الحساب.");
     } finally {
       setActionLoading(null);
     }
@@ -295,7 +326,7 @@ const Users = () => {
                             )}
                           </div>
                         </div>
-                       </td>
+                      </td>
 
                       <td className="p-5 text-center">
                         <span className={`inline-flex items-center gap-2 px-3.5 py-1.5 rounded-xl text-[10px] font-black border ${user.type === 'Staff' ? 'bg-emerald-50 text-emerald-600 border-emerald-100' : 'bg-blue-50 text-blue-600 border-blue-100'}`}>
@@ -314,6 +345,7 @@ const Users = () => {
                               >
                                 <Eye size={16} /> <span>التفاصيل</span>
                               </button>
+                              
                               <button 
                                 onClick={() => toggleBan(user.id, user.isBanned)}
                                 disabled={actionLoading === user.id}
@@ -332,6 +364,22 @@ const Users = () => {
                                 )}
                                 <span>{user.isBanned ? "فك الحظر" : "حظر"}</span>
                               </button>
+
+                              {/* زر الحذف الحاد المدمج بناء على دالة الـ Controller الجديدة للمواطنين فقط */}
+                              {user.type === "Citizen" && (
+                                <button
+                                  onClick={() => handleDeleteCitizen(user.id, user.name)}
+                                  disabled={actionLoading === user.id}
+                                  className="flex items-center gap-2 px-4 py-2 text-rose-700 bg-rose-100 hover:bg-rose-700 hover:text-white border border-rose-200 rounded-xl transition-all text-xs font-black cursor-pointer"
+                                >
+                                  {actionLoading === user.id ? (
+                                    <Loader2 size={16} className="animate-spin" />
+                                  ) : (
+                                    <Trash2 size={16} />
+                                  )}
+                                  <span>حذف نهائي</span>
+                                </button>
+                              )}
                             </>
                           ) : (
                             <div className="flex items-center gap-2 px-4 py-2 text-slate-400 bg-slate-50 rounded-xl border border-slate-100 text-[10px] font-black italic shadow-inner">
@@ -390,7 +438,7 @@ const Users = () => {
               {/* رأس الـ Popup مع صورة الخلفية */}
               <div className="relative bg-gradient-to-r from-emerald-600 to-emerald-800 p-6 text-white">
                 <button 
-                style={{cursor:"pointer"}}
+                  style={{cursor:"pointer"}}
                   onClick={closePopup}
                   className="absolute left-4 top-4 p-1.5 bg-white/20 hover:bg-white/30 rounded-xl transition-all"
                 >
@@ -459,28 +507,47 @@ const Users = () => {
 
                 {/* أزرار الإجراءات في الـ Popup */}
                 {canControl(selectedUser.type) && (
-                  <div className="flex gap-3 pt-2">
-                    <button 
-                    style={{cursor:"pointer"}}
-                      onClick={() => {
-                        toggleBan(selectedUser.id, selectedUser.isBanned);
-                      }}
-                      disabled={actionLoading === selectedUser.id}
-                      className={`flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-xl transition-all text-sm font-bold ${
-                        selectedUser.isBanned 
-                          ? "bg-emerald-50 text-emerald-600 border border-emerald-200 hover:bg-emerald-600 hover:text-white" 
-                          : "bg-rose-50 text-rose-600 border border-rose-200 hover:bg-rose-600 hover:text-white"
-                      } ${actionLoading === selectedUser.id ? 'opacity-50 cursor-wait' : ''}`}
-                    >
-                      {actionLoading === selectedUser.id ? (
-                        <Loader2 size={16} className="animate-spin" />
-                      ) : selectedUser.isBanned ? (
-                        <Unlock size={16} />
-                      ) : (
-                        <Ban size={16} />
-                      )}
-                      {selectedUser.isBanned ? "فك الحظر" : "حظر المستخدم"}
-                    </button>
+                  <div className="flex flex-col gap-2 pt-2">
+                    <div className="flex gap-3">
+                      <button 
+                        style={{cursor:"pointer"}}
+                        onClick={() => {
+                          toggleBan(selectedUser.id, selectedUser.isBanned);
+                        }}
+                        disabled={actionLoading === selectedUser.id}
+                        className={`flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-xl transition-all text-sm font-bold cursor-pointer ${
+                          selectedUser.isBanned 
+                            ? "bg-emerald-50 text-emerald-600 border border-emerald-200 hover:bg-emerald-600 hover:text-white" 
+                            : "bg-rose-50 text-rose-600 border border-rose-200 hover:bg-rose-600 hover:text-white"
+                        } ${actionLoading === selectedUser.id ? 'opacity-50 cursor-wait' : ''}`}
+                      >
+                        {actionLoading === selectedUser.id ? (
+                          <Loader2 size={16} className="animate-spin" />
+                        ) : selectedUser.isBanned ? (
+                          <Unlock size={16} />
+                        ) : (
+                          <Ban size={16} />
+                        )}
+                        {selectedUser.isBanned ? "فك الحظر" : "حظر المستخدم"}
+                      </button>
+                    </div>
+
+                    {/* زر الحذف النهائي التابع للمواطنين داخل الـ Popup أيضاً */}
+                    {selectedUser.type === "Citizen" && (
+                      <button
+                        style={{cursor:"pointer"}}
+                        onClick={() => handleDeleteCitizen(selectedUser.id, selectedUser.name)}
+                        disabled={actionLoading === selectedUser.id}
+                        className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-rose-600 hover:bg-rose-700 text-white rounded-xl text-sm font-bold transition-all shadow-md shadow-rose-100 cursor-pointer"
+                      >
+                        {actionLoading === selectedUser.id ? (
+                          <Loader2 size={16} className="animate-spin" />
+                        ) : (
+                          <Trash2 size={16} />
+                        )}
+                        <span>حذف المواطن نهائياً من السجلات</span>
+                      </button>
+                    )}
                   </div>
                 )}
               </div>

@@ -56,7 +56,7 @@ const EmergencySidebar = ({ isOpen }) => {
   }, [location.pathname]);
 
   const handleLogout = () => {
-    window.location.href = "/EmergencyLogin";
+    window.location.href = "/";
   };
 
   const toggleSubMenu = (id) => {

@@ -45,6 +45,8 @@ import EmergencyReportsView from '../components/Emergency/components/EmergencyRe
 import EmergencyMap from '../components/Emergency/components/EmergencyMap';
 import EmergencyReportDetailsMap from '../components/Emergency/components/EmergencyReportDetailsMap';
 import AddFieldUnitView from '../components/Emergency/components/AddFieldUnitView';
+import EmailNotifications from '../components/Municipalities/Shared/EmailNotifications';
+
 // --- الطريقة الأضمن لاكتشاف Tauri ---s
 // اكتشاف Tauri عبر اسم المحرك (WebView)
 const queryParams = new URLSearchParams(window.location.search);
@@ -87,6 +89,7 @@ const routes = createBrowserRouter([
           { path: 'ReportDetailsMap', element: <ReportDetailsMap /> },
           { path: 'AllAds', element: <AllAds /> },
           { path: 'CreateAd', element: <CreateAd /> },
+          {path: 'EmailNotifications', element: <EmailNotifications />}, 
         ]
       },
       {
