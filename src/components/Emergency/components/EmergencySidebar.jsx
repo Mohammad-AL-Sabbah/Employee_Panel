@@ -5,7 +5,8 @@ import {
   LayoutDashboard, Map as MapIcon, FileText,
   Radio, History, Activity, LogOut, ShieldCheck,
   ChevronDown, MessageSquare, Phone,
-  Ambulance, Hospital, Home , PlusCircle 
+  Ambulance, Hospital, Home , PlusCircle ,
+  AlertTriangle
 } from 'lucide-react';
 
 const EmergencySidebar = ({ isOpen }) => {
@@ -25,7 +26,6 @@ const EmergencySidebar = ({ isOpen }) => {
         { name: 'الوحدات الميدانية', path: '/FieldUnitsView', icon: <Ambulance size={16} /> },
         { name: 'إضافة وحدة ميدانية', path: '/AddFieldUnitView', icon: <PlusCircle size={16} className="text-blue-400" /> }, 
         { name: 'المراكز الطبية والمستشفيات', path: '/hospitals', icon: <Hospital size={16} /> },
-        { name: 'مراكز الإيواء ', path: '/shelters', icon: <Home size={16} /> },
       ]
     },
     { id: '02', path: '/EmergencyCenters', name: 'مراكز الطوارئ', icon: <MapIcon size={22} /> },

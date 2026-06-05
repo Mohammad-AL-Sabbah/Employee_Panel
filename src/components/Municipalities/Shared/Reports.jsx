@@ -5,7 +5,8 @@ import {
   Eye, Trash2, CheckCircle, 
   Clock, AlertTriangle, Loader2, ChevronRight,
   Calendar, CheckSquare, Square, X, Trash,
-  ClipboardList, RefreshCw, Link2Off, MapPin, Users
+  ClipboardList, RefreshCw, Link2Off, MapPin, Users,
+  ChevronLeft
 } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
@@ -40,15 +41,10 @@ const Reports = () => {
     setLoading(true);
     try {
       const response = await ApiAuthToken.get(`/Admin/all-reports?pageNumber=${page}&pageSize=${reportsPerPage}`);
-      if (response.data && response.data.data) {
-        const reportsData = response.data.data.filter(item => item.id);
-        const paginationInfo = response.data.data.find(item => item.totalPages);
-        
-        setReports(reportsData);
-        if (paginationInfo) {
-          setTotalPages(paginationInfo.totalPages || 1);
-        }
-      }
+    if (response.data && response.data.data) {
+  setReports(response.data.data);
+  setTotalPages(response.data.totalPages || 1);
+}
     } catch (err) {
       console.error("خطأ في جلب البلاغات:", err);
     } finally {
@@ -139,6 +135,7 @@ const Reports = () => {
     navigate('/ReportDetailsMap', { state: { reportId } });
   };
 
+  // 🔴 دالة حذف بلاغ منفرد مع فحص الأخطاء والحالة
   const deleteSingleReport = async (id) => {
     const confirmResult = await Swal.fire({
       title: 'هل أنت متأكد؟',
@@ -158,11 +155,19 @@ const Reports = () => {
         setSelectedIds(prev => prev.filter(item => item !== id));
         Swal.fire({ icon: 'success', title: 'تم الحذف بنجاح', toast: true, position: 'top-end', showConfirmButton: false, timer: 2000 });
       } catch (err) {
-        Swal.fire({ icon: 'error', title: 'فشل عملية الحذف' });
+        console.error("فشل الحذف الفردي:", err);
+        const serverMessage = err.response?.data?.message || err.response?.data;
+        Swal.fire({ 
+          icon: 'error', 
+          title: 'فشل عملية الحذف',
+          text: 'لا يمكن حذف البلاغ إلا إذا كانت حالته مُنجز أو مرفوض .',
+          footer: serverMessage ? `${JSON.stringify(serverMessage)}</span><span class="text-xs text-rose-500">تفاصيل السيرفر: ` : null
+        });
       }
     }
   };
 
+  // 🔴 دالة الحذف الجماعي مع فحص الأخطاء والحالة
   const deleteSelectedReports = async () => {
     const confirmResult = await Swal.fire({
         title: `حذف ${selectedIds.length} بلاغ؟`,
@@ -182,7 +187,12 @@ const Reports = () => {
             fetchReportsFromServer(currentPage);
             Swal.fire({ icon: 'success', title: 'تم حذف البلاغات المحددة بنجاح' });
         } catch (err) {
-            Swal.fire({ icon: 'error', title: 'حدث خطأ أثناء الحذف الجماعي' });
+            console.error("فشل الحذف الجماعي:", err);
+            Swal.fire({ 
+              icon: 'error', 
+              title: 'حدث خطأ أثناء الحذف الجماعي',
+              text: 'تأكد من أن جميع البلاغات المحددة تقع في حالة مُنجز (Resolved) أو مرفوض (Rejected)، حيث يمنع النظام حذف البلاغات النشطة أو الموكلة لفرق العمل.'
+            });
         } finally {
             setLoading(false);
         }
@@ -228,12 +238,32 @@ const Reports = () => {
       "الحالة": getStatusInfo(report.status).label,
       "التاريخ": formatDate(report.createdAt),
       "الفريق المُسنَد": report.assignedTeamName || '---'
-    
     }));
     const worksheet = XLSX.utils.json_to_sheet(excelData);
     const workbook = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(workbook, worksheet, "Reports");
     XLSX.writeFile(workbook, `PSRS_Reports_Export.xlsx`);
+  };
+
+  // دالة لتوليد مصفوفة أرقام الصفحات للعرض في الباجينيشن
+  const renderPageNumbers = () => {
+    const pages = [];
+    for (let i = 1; i <= totalPages; i++) {
+      pages.push(
+        <button
+          key={i}
+          onClick={() => setCurrentPage(i)}
+          className={`w-10 h-10 rounded-xl text-xs font-black transition-all cursor-pointer ${
+            currentPage === i 
+              ? "bg-emerald-600 text-white shadow-md shadow-emerald-500/20" 
+              : "bg-slate-50 text-slate-600 hover:bg-slate-100 border border-slate-200/60"
+          }`}
+        >
+          {i}
+        </button>
+      );
+    }
+    return pages;
   };
 
   return (
@@ -305,8 +335,8 @@ const Reports = () => {
         </div>
       </div>
 
-      {/* الجدول المعزز بعد التعديل لإضافة عمود الفريق المسؤول */}
-      <div className="bg-white rounded-[2.5rem] border border-slate-100 shadow-xl overflow-hidden mb-10">
+      {/* الجدول المعزز */}
+      <div className="bg-white rounded-[2.5rem] border border-slate-100 shadow-xl overflow-hidden mb-6">
         {loading ? (
           <div className="flex flex-col items-center justify-center py-40">
             <Loader2 className="animate-spin text-emerald-500 mb-4" size={48} />
@@ -330,7 +360,6 @@ const Reports = () => {
                   <th className="p-6 text-sm font-black text-slate-600">الوصف والتاريخ</th>
                   <th className="p-6 text-sm font-black text-slate-600">القسم</th>
                   <th className="p-6 text-sm font-black text-slate-600">الحالة</th>
-                  {/* 🟢 ترويسة العمود الجديد المضاف بالتحديد بجانب الحالة والإجراءات 🟢 */}
                   <th className="p-6 text-sm font-black text-slate-600">الفريق المسؤول</th>
                   <th className="p-6 text-sm font-black text-slate-600 text-center">إجراءات</th>
                 </tr>
@@ -363,7 +392,6 @@ const Reports = () => {
                         </div>
                       </td>
                       
-                      {/* 🟢 عمود عرض الفريق المسؤول الجديد والذكي 🟢 */}
                       <td className="p-6">
                         {report.assignedTeamName ? (
                           <button 
@@ -395,7 +423,41 @@ const Reports = () => {
         )}
       </div>
 
-      {/* مودال تفاصيل البلاغات المسندة المدمج بدون أي عناصر واجهة إضافية غير مرغوبة */}
+      {/* --- شريط الباجينيشن المعزز --- */}
+      {!loading && totalPages > 1 && (
+        <div className="flex flex-col sm:flex-row justify-between items-center bg-white border border-slate-100 rounded-[2rem] px-8 py-4 shadow-sm gap-4 mb-10">
+          <p className="text-xs font-bold text-slate-500">
+            الصفحة <span className="text-slate-800 font-black">{currentPage}</span> من أصل <span className="text-slate-800 font-black">{totalPages}</span>
+          </p>
+          
+          <div className="flex items-center gap-2">
+            {/* زر الصفحة السابقة */}
+            <button
+              onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+              disabled={currentPage === 1}
+              className="p-2.5 rounded-xl bg-slate-50 border border-slate-200 text-slate-600 hover:bg-slate-100 transition-all cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+            >
+              <ChevronRight size={18} />
+            </button>
+
+            {/* أرقام الصفحات الديناميكية */}
+            <div className="flex items-center gap-1.5">
+              {renderPageNumbers()}
+            </div>
+
+            {/* زر الصفحة التالية */}
+            <button
+              onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+              disabled={currentPage === totalPages}
+              className="p-2.5 rounded-xl bg-slate-50 border border-slate-200 text-slate-600 hover:bg-slate-100 transition-all cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+            >
+              <ChevronLeft size={18} />
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* مودال تفاصيل البلاغات المسندة */}
       {isDetailsModalOpen && selectedTeam && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-slate-900/50 backdrop-blur-sm" onClick={() => setIsDetailsModalOpen(false)} />

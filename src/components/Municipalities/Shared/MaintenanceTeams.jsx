@@ -118,8 +118,8 @@ export default function MaintenanceTeams() {
   const translateStatus = (status) => {
     switch (status) {
       case 'Available': return 'متاح';
-      case 'Busy': return 'مشغول';
       case 'OnMission': return 'في مهمة';
+      case 'Unavailable': return 'غير متاح'
       default: return 'متاح';
     }
   };
@@ -127,8 +127,8 @@ export default function MaintenanceTeams() {
   const translateStatusToEn = (status) => {
     switch (status) {
       case 'متاح': return 'Available';
-      case 'مشغول': return 'Busy';
       case 'في مهمة': return 'OnMission';
+      case 'غير متاح': return 'Unavailable';
       default: return 'Available';
     }
   };
@@ -262,7 +262,7 @@ export default function MaintenanceTeams() {
   const stats = {
     available: teams.filter(t => t.status === 'متاح').length,
     onMission: teams.filter(t => t.status === 'في مهمة').length,
-    busy: teams.filter(t => t.status === 'مشغول').length,
+    unavailable: teams.filter(t => t.status === 'غير متاح').length,
     totalStaff: teams.length * 4,
     completedReports: 142
   };
@@ -271,7 +271,7 @@ export default function MaintenanceTeams() {
     switch (status) {
       case 'متاح': return { bg: 'bg-emerald-50', text: 'text-emerald-600' };
       case 'في مهمة': return { bg: 'bg-blue-50', text: 'text-blue-600' };
-      case 'مشغول': return { bg: 'bg-rose-50', text: 'text-rose-600' };
+      case 'غير متاح': return { bg: 'bg-rose-50', text: 'text-rose-600' };
       default: return { bg: 'bg-slate-50', text: 'text-slate-500' };
     }
   };
@@ -396,7 +396,7 @@ export default function MaintenanceTeams() {
                   <select value={formData.teamStatus} onChange={(e) => setFormData({...formData, teamStatus: e.target.value})} className="w-full bg-slate-50 border-none rounded-2xl py-3 px-4 text-sm focus:ring-2 focus:ring-emerald-500/20 outline-none cursor-pointer">
                     <option value="متاح">متاح</option>
                     <option value="في مهمة">في مهمة</option>
-                    <option value="مشغول">مشغول</option>
+                    <option value="مشغول">غير متاح</option>
                   </select>
                 </div>
                 <div className="space-y-1">
@@ -555,7 +555,7 @@ export default function MaintenanceTeams() {
 
         {/* التبويبات */}
         <div className="flex gap-8 mb-6 border-b border-slate-200 pb-1">
-          {['الكل', 'متاح', 'في مهمة', 'مشغول'].map((tab) => (
+          {['الكل', 'متاح', 'في مهمة', 'غير متاح'].map((tab) => (
             <button key={tab} onClick={() => setActiveTab(tab)} className={`pb-3 text-sm font-bold transition-all relative cursor-pointer ${activeTab === tab ? 'text-emerald-600' : 'text-slate-400 hover:text-slate-600'}`}>
               {tab}
               {activeTab === tab && <div className="absolute bottom-0 right-0 left-0 h-1 bg-emerald-600 rounded-full" />}
@@ -573,7 +573,7 @@ export default function MaintenanceTeams() {
               return (
                 <div key={team.id} className="bg-white border border-slate-200 rounded-[1.5rem] p-5 hover:shadow-xl transition-all group animate-in fade-in slide-in-from-bottom-4 duration-500">
                   <div className="flex justify-between items-start mb-4">
-                    <div className={`p-2 rounded-xl ${theme.bg} ${theme.text}`}><Wrench size={20} /></div>
+                    <div className={`p-2 rounded-xl $ش{theme.bg} ${theme.text}`}><Wrench size={20} /></div>
                     <span className={`px-3 py-1 rounded-lg text-[10px] font-black uppercase tracking-wider ${theme.bg} ${theme.text}`}>{team.status}</span>
                   </div>
                   <h3 className="font-bold text-slate-800 mb-1 group-hover:text-emerald-600 transition-colors">التخصص: {team.name}</h3>
