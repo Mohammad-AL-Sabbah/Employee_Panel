@@ -435,7 +435,7 @@ const EmergencyReportDetailsMap = () => {
                 <option value="" className="bg-[#050505]">اختر الوحدة المتاحة حالياً...</option>
                 {teams.map(team => (
                   <option key={team.id} value={team.id} className="bg-[#050505]">
-                    {team.fullName} - ({team.specialization})
+                    {team.fullName} - ({team.userName})
                   </option>
                 ))}
               </select>

@@ -3,7 +3,7 @@ import { NavLink, Link, useNavigate } from 'react-router-dom';
 import { 
   LayoutGrid, AlertCircle, Users, Settings, HelpCircle, 
   LogOut, ChevronLeft, ShieldCheck, Home, Wrench, 
-  Megaphone, Layout, PlusCircle, ChevronDown, X 
+  Megaphone, Layout, PlusCircle, ChevronDown, X, Mail
 } from 'lucide-react';
 import ApiAuthToken from '../../../Api/ApiAuthToken';
 
@@ -117,7 +117,7 @@ const Sidebar = () => {
           <SidebarNavItem icon={AlertCircle} label="إدارة البلاغات" to="/reports" hasArrow />
           <SidebarNavItem icon={Wrench} label="فرق الصيانة" to="/teams" hasArrow />
           <SidebarNavItem icon={Users} label="قاعدة المستخدمين" to="/users" hasArrow />
-
+          <SidebarNavItem icon={Mail} label="نظام المراسلات والبريد" to="/EmailNotifications" hasArrow />
           <CollapsibleSidebarItem 
             icon={Megaphone} 
             label="إعلانات البلدية" 

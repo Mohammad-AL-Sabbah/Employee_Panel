@@ -199,19 +199,19 @@ export default function MaintenanceTeams() {
     }
   };
 
-  const handleAddTeam = async (e) => {
+const handleAddTeam = async (e) => {
     e.preventDefault();
     setActionLoading(true);
     try {
       const newTeam = {
-        TeamLeaderName: formData.fullName,
-        Email: formData.email,
-        Password: formData.password,
-        PhoneNumber: formData.phoneNumber,
-        Specialization: formData.specialization,
-        CurrentLocationName: formData.currentLocationName,
-        City: formData.city,
-        Street: formData.street
+        teamLeaderName: formData.fullName,
+        email: formData.email,
+        password: formData.password,
+        phoneNumber: formData.phoneNumber,
+        specialization: formData.specialization,
+        currentLocationName: formData.currentLocationName,
+        city: formData.city,
+        street: formData.street
       };
 
       const response = await ApiAuthToken.post('/Admin/add-maintenance-team', newTeam);
@@ -222,7 +222,7 @@ export default function MaintenanceTeams() {
       }
     } catch (err) {
       console.error("Validation Errors:", err.response?.data?.errors);
-      const errorMsg = err.response?.data?.message || "حدث خطأ، تأكد من ملء جميع الحقول";
+      const errorMsg = err.response?.data?.message || "حدث خطأ، تأكد من ملء جميع الحقول بشكل صحيح";
       alert(errorMsg);
     } finally {
       setActionLoading(false);
@@ -354,7 +354,7 @@ export default function MaintenanceTeams() {
               <div className="absolute top-0 right-0 w-64 h-64 bg-emerald-500/10 rounded-full -mr-32 -mt-32 blur-3xl" />
               <div className="relative flex justify-between items-center">
                 <div>
-                  <h2 className="text-3xl font-black tracking-tight mb-2">تسجيل قوة ميدانية</h2>
+                  <h2 className="text-3xl font-black tracking-tight mb-2">تسجيل فرق صيانة ميدانية</h2>
                   <p className="text-emerald-400 text-sm font-bold uppercase tracking-[0.2em]">إضافة وحدة صيانة جديدة للنظام</p>
                 </div>
                 <button type="button" onClick={() => setIsModalOpen(false)} className="w-12 h-12 bg-white/10 hover:bg-white/20 backdrop-blur-md rounded-2xl flex items-center justify-center transition-all cursor-pointer group">
@@ -395,8 +395,8 @@ export default function MaintenanceTeams() {
                   </div>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                     <div className="col-span-1 md:col-span-2 space-y-2">
-                      <label className="text-[11px] font-black text-slate-400 uppercase mr-2">اسم قائد القوة الميدانية</label>
-                      <input type="text" required value={formData.fullName} onChange={(e) => setFormData({...formData, fullName: e.target.value})} placeholder="الاسم الكامل للقائد" className="w-full bg-slate-50 border-2 border-transparent focus:border-blue-500/20 focus:bg-white px-5 py-3.5 rounded-2xl outline-none transition-all font-bold text-slate-700 shadow-sm" />
+                      <label className="text-[11px] font-black text-slate-400 uppercase mr-2">اسم مسؤول القوة الميدانية</label>
+                      <input type="text" required value={formData.fullName} onChange={(e) => setFormData({...formData, fullName: e.target.value})} placeholder="الاسم الكامل للمسوؤل" className="w-full bg-slate-50 border-2 border-transparent focus:border-blue-500/20 focus:bg-white px-5 py-3.5 rounded-2xl outline-none transition-all font-bold text-slate-700 shadow-sm" />
                     </div>
                     <div className="space-y-2">
                       <label className="text-[11px] font-black text-slate-400 uppercase mr-2">التخصص الفني</label>
@@ -448,7 +448,7 @@ export default function MaintenanceTeams() {
               </div>
               <form onSubmit={handleUpdateTeam} className="space-y-4">
                 <div className="space-y-1">
-                  <label className="text-[10px] font-bold text-slate-400 mr-2">اسم القائد</label>
+                  <label className="text-[10px] font-bold text-slate-400 mr-2">اسم المسؤول</label>
                   <input type="text" required value={formData.fullName} onChange={(e) => setFormData({...formData, fullName: e.target.value})} className="w-full bg-slate-50 border-none rounded-2xl py-3 px-4 text-sm focus:ring-2 focus:ring-emerald-500/20 outline-none" />
                 </div>
                 <div className="space-y-1">
@@ -672,7 +672,7 @@ export default function MaintenanceTeams() {
             <div><h1 className="text-xl font-black text-slate-800">إدارة القوى الميدانية</h1><p className="text-xs font-bold text-slate-400 uppercase tracking-wider text-right">نظام PSRS المركزي</p></div>
           </div>
           <div className="flex items-center gap-3 w-full md:w-auto">
-            <div className="relative flex-1 md:w-80"><Search className="absolute right-4 top-2.5 text-slate-400" size={18} /><input type="text" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} placeholder="ابحث عن تخصص أو قائد..." className="w-full pr-12 pl-4 py-2.5 rounded-xl border-none bg-slate-100 focus:ring-2 focus:ring-emerald-500/20 outline-none text-sm font-medium" /></div>
+            <div className="relative flex-1 md:w-80"><Search className="absolute right-4 top-2.5 text-slate-400" size={18} /><input type="text" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} placeholder="ابحث عن تخصص أو مسؤول..." className="w-full pr-12 pl-4 py-2.5 rounded-xl border-none bg-slate-100 focus:ring-2 focus:ring-emerald-500/20 outline-none text-sm font-medium" /></div>
             <button type="button" onClick={() => {resetForm(); setIsModalOpen(true);}} className="bg-slate-900 text-white px-5 py-2.5 rounded-xl hover:bg-slate-800 transition-all shadow-lg flex items-center gap-2 text-sm font-bold cursor-pointer"><Plus size={18} /> إضافة فريق</button>
           </div>
         </div>

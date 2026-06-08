@@ -287,7 +287,7 @@ const FieldUnitsView = () => {
                               <div className="space-y-3 mb-8">
                                 <div className="flex items-center gap-3 text-slate-400">
                                   <User size={16} className="text-slate-600" />
-                                  <span className="text-sm font-medium">الموظف: {unit.userName || unit.username || 'غير معين'}</span>
+                                  <span className="text-sm font-medium">التخصص : {unit.userName || unit.username || 'غير معين'}</span>
                                 </div>
                                 <div className="flex items-center gap-2 mt-4">
                                   <span className={`flex h-2 w-2 rounded-full animate-pulse ${unit.status === 'Available' ? 'bg-emerald-500' : 'bg-amber-500'}`}></span>

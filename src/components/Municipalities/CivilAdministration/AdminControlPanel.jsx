@@ -1,15 +1,17 @@
 /* eslint-disable no-unused-vars */
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { 
   Plus, MessageSquare, MapPin, AlertCircle, UserPlus,
   Clock, Bell, ChevronLeft, Users, Loader2, Search, 
   ShieldCheck, History, LifeBuoy, UserMinus, CheckCircle,
-  Ticket
+  Ticket, RotateCw
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import { toast } from 'sonner'; // استيراد السونر
+import { toast } from 'sonner'; 
+import ApiAuthToken from '../../../Api/ApiAuthToken'; // استيراد كلاس الأمان المخصص
 
 function AdminControlPanel() {
+  // --- حالات إدارة الموظفين ---
   const [searchTerm, setSearchTerm] = useState("");
   const [staff, setStaff] = useState([
     { id: 101, name: "أحمد محمد", role: "Admin", status: "نشط" },
@@ -17,10 +19,58 @@ function AdminControlPanel() {
     { id: 103, name: "ياسين علي", role: "Admin", status: "نشط" },
   ]);
 
+  // --- حالات إدارة البلاغات المدمجة ---
+  const [reports, setReports] = useState([]);
+  const [reportsLoading, setReportsLoading] = useState(true);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [reportsError, setReportsError] = useState(null);
+  const [reportsSearchTerm, setReportsSearchTerm] = useState("");
+
+  // --- دالة جلب البلاغات من نظام PSRS ---
+  const fetchReports = useCallback(async (showFullLoader = false) => {
+    if (showFullLoader) setReportsLoading(true);
+    else setIsRefreshing(true);
+
+    try {
+      const response = await ApiAuthToken.get('/Admin/all-reports?pageNumber=1&pageSize=10');
+      
+      if (response.data && response.data.data) {
+        const reportsData = response.data.data.filter(item => item.id);
+        
+        // ترتيب هندسي: الأحدث أولاً
+        const sortedData = [...reportsData].sort((a, b) => {
+          const dateA = new Date(a.createdAt || 0);
+          const dateB = new Date(b.createdAt || 0);
+          return dateB - dateA;
+        });
+
+        setReports(sortedData);
+        setReportsError(null);
+      } else {
+        setReports([]);
+      }
+    } catch (err) {
+      console.error("Error fetching reports in AdminControlPanel:", err);
+      setReportsError("فشل في جلب البلاغات المزامنة لنظام PSRS");
+    } finally {
+      setReportsLoading(false);
+      setIsRefreshing(false);
+    }
+  }, []);
+
+  // --- Lifecycle وإعداد المؤقتات ---
   useEffect(() => {
     document.title = "لوحة الإدارة والدعم | P.S.R.S";
     
-    // محاكاة تنبيه للمسؤول بوجود تذاكر دعم فني معلقة عند دخول الصفحة
+    // أول جلب للبلاغات مع لودر كامل
+    fetchReports(true);
+
+    // إنترفال للتحديث التلقائي الصامت كل 10 دقائق
+    const intervalId = setInterval(() => {
+      fetchReports(false);
+    }, 600000);
+
+    // محاكاة تنبيه للمسؤول بوجود تذاكر دعم فني معلقة
     const timer = setTimeout(() => {
       toast.warning('تذكير: تذاكر دعم معلقة', {
         description: 'يوجد 2 من موظفي الميدان يواجهون مشاكل تقنية حالياً.',
@@ -31,8 +81,21 @@ function AdminControlPanel() {
       });
     }, 1500);
 
-    return () => clearTimeout(timer);
-  }, []);
+    return () => {
+      clearInterval(intervalId);
+      clearTimeout(timer);
+    };
+  }, [fetchReports]);
+
+  // تصفية البلاغات وعرض أول 5 بلاغات فقط في الملخص
+  const displayReports = reports
+    .filter(item => 
+      (item.title && item.title.toLowerCase().includes(reportsSearchTerm.toLowerCase())) ||
+      (item.description && item.description.toLowerCase().includes(reportsSearchTerm.toLowerCase())) ||
+      (item.citizenName && item.citizenName.toLowerCase().includes(reportsSearchTerm.toLowerCase())) ||
+      (item.id && item.id.toString().includes(reportsSearchTerm))
+    )
+    .slice(0, 5);
 
   return (
     <div className="p-8 w-full bg-transparent animate-in fade-in duration-500" dir="rtl">
@@ -42,9 +105,9 @@ function AdminControlPanel() {
         <h2 className="text-2xl font-bold text-slate-800">لوحة الإدارة والدعم الفني</h2>
       </div>
 
-      <div className="grid grid-cols-8 gap-8">
-        {/* الجزء الأيمن الرئيسي */}
-        <div className="col-span-12 lg:col-span-9 space-y-8">
+      <div className="grid grid-cols-12 gap-8">
+        {/* الجزء الرئيسي الممتد */}
+        <div className="col-span-12 space-y-8">
           
           {/* قسم الإجراءات السريعة */}
           <div className="space-y-4">
@@ -60,62 +123,102 @@ function AdminControlPanel() {
             </div>
           </div>
 
-          {/* قسم إدارة الموظفين */}
-          <div className="bg-white rounded-[2.5rem] p-8 border border-slate-100 shadow-sm min-h-[450px]">
-            <div className="flex justify-between items-center mb-8">
+          {/* ------------------------------------------------------------- */}
+          {/* قسم البلاغات الواردة الحقيقي الحية المدمج */}
+          {/* ------------------------------------------------------------- */}
+          <div className="bg-white rounded-[2.5rem] p-8 border border-slate-100 shadow-sm min-h-[400px]">
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
               <div>
-                <h3 className="text-slate-800 font-bold text-lg">قائمة موظفي النظام</h3>
-                <p className="text-xs text-slate-400 mt-1">إدارة صلاحيات وحالة وصول الطاقم</p>
+                <h3 className="text-slate-800 font-bold text-lg flex items-center gap-2">
+                  أحدث البلاغات الواردة (ملخص النظام)
+                  {isRefreshing && <Loader2 className="animate-spin text-emerald-500" size={16} />}
+                </h3>
+                <p className="text-xs text-slate-400 mt-1">
+                  {reportsSearchTerm ? `نتائج البحث عن: "${reportsSearchTerm}"` : "تحديث تلقائي مباشر كل 10 دقائق من PSRS"}
+                </p>
               </div>
-              <div className="relative w-72 group">
-                <Search className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-emerald-500 transition-colors" size={16} />
-                <input 
-                  type="text" 
-                  placeholder="بحث عن موظف بالاسم أو الرقم..." 
-                  className="w-full bg-white border border-slate-200 rounded-xl py-2.5 pr-10 pl-4 text-xs outline-none focus:ring-2 focus:ring-emerald-500/10 focus:border-emerald-500 transition-all shadow-sm text-right"
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                />
+              
+              <div className="flex items-center gap-2 w-full sm:w-auto">
+                {/* حقل البحث الذكي في البلاغات */}
+                <div className="relative w-full sm:w-72 group">
+                  <Search className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-emerald-500 transition-colors" size={16} />
+                  <input 
+                    type="text" 
+                    placeholder="بحث برقم البلاغ، المحتوى، أو الاسم..."
+                    className="w-full bg-white border border-slate-200 rounded-xl py-2.5 pr-10 pl-4 text-xs outline-none focus:ring-2 focus:ring-emerald-500/10 focus:border-emerald-500 transition-all shadow-sm text-right"
+                    onChange={(e) => setReportsSearchTerm(e.target.value)}
+                  />
+                </div>
+
+                {/* زر التحديث اليدوي الفوري للمسؤول */}
+                <button 
+                  onClick={() => fetchReports(false)}
+                  disabled={isRefreshing || reportsLoading}
+                  className="p-2.5 bg-slate-50 hover:bg-emerald-50 text-slate-500 hover:text-emerald-600 rounded-xl border border-slate-200 hover:border-emerald-200 transition-all active:scale-95 disabled:opacity-50"
+                  title="تحديث البيانات الآن"
+                >
+                  <RotateCw size={16} className={`${isRefreshing ? 'animate-spin' : ''}`} />
+                </button>
               </div>
-              <Link to="/StaffStatus" className="text-emerald-600 text-xs font-bold hover:underline bg-emerald-50 px-3 py-1.5 rounded-lg transition-colors">
-                عرض كافة الطاقم
+
+              <Link to="/reports" className="text-emerald-600 text-xs font-bold hover:underline bg-emerald-50 px-3 py-1.5 rounded-lg transition-colors whitespace-nowrap">
+                عرض سجل البلاغات الكامل
               </Link>
             </div>
 
             <div className="space-y-4">
-              {staff.filter(m => m.name.includes(searchTerm)).map((member) => (
-                <div 
-                  key={member.id} 
-                  className="flex justify-between items-center bg-slate-50/50 p-5 rounded-2xl border border-slate-100 hover:bg-white hover:shadow-xl hover:border-emerald-100 transition-all duration-300 cursor-pointer group"
-                >
-                  <div className="flex items-center gap-5 flex-1">
-                    <div className="bg-white p-3 rounded-2xl shadow-sm text-emerald-500 group-hover:bg-emerald-500 group-hover:text-white transition-all duration-300">
-                      <Users size={22} />
-                    </div>
-                    <div>
-                      <p className="text-sm font-bold text-slate-800 group-hover:text-emerald-700 transition-colors text-right">
-                        {member.name}
-                      </p>
-                      <p className="text-[11px] text-slate-400 mt-1.5 flex items-center gap-1">
-                        <span className="font-bold text-slate-500">المسمى الوظيفي:</span> {member.role}
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="flex items-center gap-4">
-                    <div className="flex items-center gap-2">
-                       <span className={`text-[10px] font-black px-3 py-1.5 rounded-full border uppercase ${member.status === 'نشط' ? 'text-emerald-600 bg-emerald-50 border-emerald-100' : 'text-red-500 bg-red-50 border-red-100'}`}>
-                         {member.status}
-                       </span>
-                    </div>
-                    <ChevronLeft size={18} className="text-slate-300 group-hover:text-emerald-500 group-hover:-translate-x-1 transition-all" />
-                  </div>
+              {reportsLoading ? (
+                <div className="flex flex-col items-center justify-center py-20 text-slate-300">
+                  <Loader2 className="animate-spin mb-4" size={36} />
+                  <p className="text-sm font-medium">جاري مزامنة بلاغات PSRS الميدانية...</p>
                 </div>
-              ))}
+              ) : reportsError ? (
+                <div className="text-center py-20 text-red-400 bg-red-50 rounded-3xl border border-red-100 italic text-sm">
+                  {reportsError}
+                </div>
+              ) : displayReports.length > 0 ? (
+                displayReports.map((report) => (
+                  <div 
+                    key={report.id} 
+                    className="flex justify-between items-center bg-slate-50/50 p-5 rounded-2xl border border-slate-100 hover:bg-white hover:shadow-xl hover:border-emerald-100 transition-all duration-300 cursor-pointer group"
+                  >
+                    <div className="flex items-center gap-5 flex-1">
+                      <div className="bg-white p-3 rounded-2xl shadow-sm text-emerald-500 group-hover:bg-emerald-500 group-hover:text-white transition-all duration-300">
+                        <AlertCircle size={22} />
+                      </div>
+                      <div className="max-w-xl text-right">
+                        <p className="text-sm font-bold text-slate-800 group-hover:text-emerald-700 transition-colors line-clamp-1">
+                          {report.title || report.description}
+                        </p>
+                        <p className="text-[11px] text-slate-400 mt-1.5 flex items-center gap-1.5">
+                          <span className="font-bold text-slate-500">المواطن:</span> {report.citizenName || "مجهول"}
+                          <span className="text-slate-300">|</span>
+                          <span className="font-bold text-slate-500">الحالة:</span> 
+                          <span className="text-emerald-600 font-medium">{report.status || "جديد"}</span>
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-4">
+                      <div className="text-left">
+                        <span className="text-[10px] font-black text-emerald-600 bg-emerald-50 px-3 py-1.5 rounded-full border border-emerald-100 uppercase">
+                          رقم البلاغ : {report.id}
+                        </span>
+                      </div>
+                      <ChevronLeft size={18} className="text-slate-300 group-hover:text-emerald-500 group-hover:-translate-x-1 transition-all" />
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <div className="text-center py-20 text-slate-400 border-2 border-dashed border-slate-100 rounded-[2rem] bg-slate-50/30 text-sm">
+                   عذراً، لا توجد بلاغات ميدانية مطابقة للبحث حالياً.
+                </div>
+              )}
             </div>
           </div>
-        </div>
 
-      
+
+        </div>
       </div>
     </div>
   );

@@ -92,8 +92,8 @@ const fetchReports = useCallback(async (showFullLoader = false) => {
               <span>إجراءات سريعة</span>
             </div>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              <QuickCard icon={Plus} label="إضافة إعلان" to="#" active />
-              <QuickCard icon={MessageSquare} label="إرسال إشعار" to="#" />
+              <QuickCard icon={Plus} label="إضافة إعلان" to="/CreateAd" active />
+              <QuickCard icon={MessageSquare} label="إرسال إشعار" to="/EmailNotifications"  />
               <QuickCard icon={Users} label="مستخدمين النظام" to="/users" />
               <QuickCard icon={MapPin} label="موقع وحالة الفرق" to="/teams" />
             </div>
