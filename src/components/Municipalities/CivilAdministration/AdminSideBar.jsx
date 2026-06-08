@@ -134,7 +134,7 @@ const AdminSideBar = () => {
 <SidebarItem icon={Mail} label="نظام المراسلات والبريد" to="/EmailNotifications" hasArrow />
           <CollapsibleSidebarItem icon={UserCog} label="شؤون الموظفين" items={[
             { icon: FileClock, label: "سجلات الرقابة", to: "/StaffLogs" },
-            { icon: Users, label: "إدارة الموظفين", to: "/ManageStaff" }, 
+            { icon: Users, label: "إضافة الموظفين", to: "/ManageStaff" }, 
           ]} />
 
           <CollapsibleSidebarItem icon={Megaphone} label="إعلانات البلدية" items={[

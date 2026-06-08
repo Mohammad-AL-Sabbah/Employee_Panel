@@ -22,7 +22,8 @@ const Reports = () => {
   const [reports, setReports] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
-  const [statusFilter, setStatusFilter] = useState("الكل");
+  // ✅ جعلنا الفلتر الافتراضي يعتمد على المفتاح "all" لتجنب مشاكل النصوص العربية
+  const [statusFilter, setStatusFilter] = useState("all");
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const reportsPerPage = 10;
@@ -41,10 +42,10 @@ const Reports = () => {
     setLoading(true);
     try {
       const response = await ApiAuthToken.get(`/Admin/all-reports?pageNumber=${page}&pageSize=${reportsPerPage}`);
-    if (response.data && response.data.data) {
-  setReports(response.data.data);
-  setTotalPages(response.data.totalPages || 1);
-}
+      if (response.data && response.data.data) {
+        setReports(response.data.data);
+        setTotalPages(response.data.totalPages || 1);
+      }
     } catch (err) {
       console.error("خطأ في جلب البلاغات:", err);
     } finally {
@@ -217,10 +218,12 @@ const Reports = () => {
     return date.toLocaleDateString('ar-PS', { year: 'numeric', month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' });
   };
 
+  // ✅ تعديل منطق الفلترة ليعتمد على الـ Key الإنجليزي القادم من السيرفر مباشرة لتفادي مشاكل الحركات والترميز
   const filteredReports = reports.filter(report => {
     const searchLower = searchTerm.toLowerCase().trim();
-    const statusInfo = getStatusInfo(report.status);
-    const matchesStatus = statusFilter === "الكل" || statusInfo.label === statusFilter;
+    const reportStatus = report.status?.trim();
+    
+    const matchesStatus = statusFilter === "all" || reportStatus === statusFilter;
     
     let matchesSearch = true;
     if (searchLower) {
@@ -265,6 +268,16 @@ const Reports = () => {
     }
     return pages;
   };
+
+  // ✅ مصفوفة تحتوي على فلاتر الواجهة، نربط فيها الاسم العربي بالـ Key الإنجليزي المتوقع من الـ API
+  const filterTabs = [
+    { key: "all", label: "الكل" },
+    { key: "Pending", label: "قيد الانتظار" },
+    { key: "InProgress", label: "قيد العمل" },
+    { key: "Resolved", label: "مُنجز" },
+    { key: "Rejected", label: "مرفوض" },
+    { key: "Assigned", label: "مسند" }
+  ];
 
   return (
     <div className="p-8 w-full bg-[#f8fafc] min-h-screen" dir="rtl">
@@ -321,15 +334,16 @@ const Reports = () => {
           <div className="flex items-center gap-2 text-slate-500 font-bold text-[10px] uppercase tracking-wider bg-slate-100 px-3 py-1.5 rounded-lg">
             <Filter size={14} /> تصفية حسب الحالة
           </div>
-          {["الكل", "قيد الانتظار", "قيد العمل", "مُنجز", "مرفوض", "مسند"].map((filter) => (
+          {/* ✅ رندرة أزرار الفلترة بشكل ديناميكي آمن اعتماداً على الـ Key */}
+          {filterTabs.map((tab) => (
             <button
-              key={filter}
-              onClick={() => { setStatusFilter(filter); setCurrentPage(1); }}
+              key={tab.key}
+              onClick={() => { setStatusFilter(tab.key); setCurrentPage(1); }}
               className={`px-5 py-2 rounded-xl text-xs font-black transition-all cursor-pointer ${
-                statusFilter === filter ? "bg-slate-800 text-white shadow-lg" : "bg-slate-100 text-slate-600 hover:bg-white border border-slate-200"
+                statusFilter === tab.key ? "bg-slate-800 text-white shadow-lg" : "bg-slate-100 text-slate-600 hover:bg-white border border-slate-200"
               }`}
             >
-              {filter}
+              {tab.label}
             </button>
           ))}
         </div>

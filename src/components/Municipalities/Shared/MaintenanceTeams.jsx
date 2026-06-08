@@ -1,12 +1,17 @@
 /* eslint-disable no-unused-vars */
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { 
   Users, Wrench, CheckCircle2, Clock, 
   MapPin, Phone, ChevronLeft, Search, 
   Plus, Activity, X, ShieldCheck, Loader2,
-  Mail, Lock, Trash2, ClipboardList, RefreshCw, Link2Off
+  Mail, Lock, Trash2, ClipboardList, RefreshCw, Link2Off,
+  MessageSquare, Send
 } from 'lucide-react';
 import ApiAuthToken from '../../../Api/ApiAuthToken';
+
+// استيراد Firebase
+import { db } from '../../../utils/firebaseConfig';
+import { collection, addDoc, query, orderBy, onSnapshot, serverTimestamp } from "firebase/firestore";
 
 export default function MaintenanceTeams() {
   const [activeTab, setActiveTab] = useState('الكل');
@@ -19,19 +24,83 @@ export default function MaintenanceTeams() {
   const [assignedReports, setAssignedReports] = useState([]); 
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(false);
-  const [loadingReports, setLoadingReports] = useState(false); 
+  const [loadingReports, setLoadingReports] = useState(false);
+
+  // --- حالات الشات المباشر (للويب) ---
+  const [activeChatTeam, setActiveChatTeam] = useState(null);
+  const [chatMessages, setChatMessages] = useState([]);
+  const [inputChatMessage, setInputChatMessage] = useState("");
+  const messagesEndRef = useRef(null);
 
   const [formData, setFormData] = useState({
     fullName: '',
     email: '',
     password: '',
     specialization: '',
-    teamStatus: 'Available',
+    teamStatus: 'متاح',
     currentLocationName: '',
     phoneNumber: '',
     city: '',
     street: ''
   });
+
+  // التمرير التلقائي لأسفل الشات
+  useEffect(() => {
+    if (messagesEndRef.current) {
+      messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
+    }
+  }, [chatMessages]);
+
+  // text-slate-400 الاستماع لرسائل Firebase عند اختيار فريق
+  useEffect(() => {
+    if (!activeChatTeam) return;
+
+    const chatId = `MaintenanceChat_${activeChatTeam.id}`;
+    
+    const q = query(
+      collection(db, "Chats", chatId, "Messages"),
+      orderBy("createdAt", "asc")
+    );
+
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const msgs = snapshot.docs.map(doc => {
+        const data = doc.data();
+        return { 
+          id: doc.id, 
+          ...data,
+          // تجنب الـ null المؤقت للـ serverTimestamp محلياً
+          createdAt: data.createdAt ? data.createdAt.toDate() : new Date()
+        };
+      });
+      setChatMessages(msgs);
+    }, (err) => {
+      console.error("Firebase Chat Error:", err);
+    });
+
+    return () => unsubscribe();
+  }, [activeChatTeam]);
+
+  // إرسال رسالة من لوحة التحكم (الويب)
+  const handleSendChatMessage = async (e) => {
+    e.preventDefault();
+    if (!inputChatMessage.trim() || !activeChatTeam) return;
+
+    const messageText = inputChatMessage.trim();
+    setInputChatMessage("");
+    
+    const chatId = `MaintenanceChat_${activeChatTeam.id}`;
+
+    try {
+      await addDoc(collection(db, "Chats", chatId, "Messages"), {
+        text: messageText,
+        senderId: "HQ_Admin", // معرف ثابت لغرفة العمليات
+        senderName: "غرفة العمليات - الصيانة", 
+        createdAt: serverTimestamp()
+      });
+    } catch (err) {
+      console.error("Error sending message:", err);
+    }
+  };
 
   const fetchTeams = async () => {
     try {
@@ -54,7 +123,7 @@ export default function MaintenanceTeams() {
     } catch (err) {
       console.error("Error fetching teams:", err);
     } finally {
-      setLoading(false);
+      if (loading) setLoading(false);
     }
   };
 
@@ -92,18 +161,15 @@ export default function MaintenanceTeams() {
     }
   };
 
-  // 🔥 دالة فك ارتباط بلاغ واحد محدد (تم التأكد من ربطها بالزر الفردي) 🔥
   const handleUnassignSingleReport = async (reportId) => {
     if (window.confirm(`هل أنت متأكد من فك ارتباط البلاغ رقم #${reportId} فقط عن هذا الفريق؟`)) {
       setActionLoading(true);
       try {
-        // نداء الـ Endpoint الجديد الذي أنشأته في الباك إند
         const response = await ApiAuthToken.patch(`/Admin/maintenance-team/unassign-single-report/${reportId}`);
         if (response.status === 200) {
           alert(response.data.message || "تم فك ارتباط البلاغ بنجاح.");
-          // تحديث قائمة البلاغات المعروضة في المودال بحذف البلاغ الذي فُك ارتباطه فوراً ليتفاعل المستخدم مع الواجهة
           setAssignedReports(prev => prev.filter(report => report.id !== reportId));
-          fetchTeams(); // تحديث الإحصائيات العامة في الخلفية
+          fetchTeams(); 
         }
       } catch (err) {
         console.error("Error unassigning single report:", err);
@@ -119,7 +185,7 @@ export default function MaintenanceTeams() {
     switch (status) {
       case 'Available': return 'متاح';
       case 'OnMission': return 'في مهمة';
-      case 'Unavailable': return 'غير متاح'
+      case 'Unavailable': return 'غير متاح';
       default: return 'متاح';
     }
   };
@@ -214,14 +280,14 @@ export default function MaintenanceTeams() {
   const openEditModal = (team) => {
     setSelectedTeam(team);
     setFormData({
-      fullName: team.leader,
-      specialization: team.name,
-      teamStatus: team.status,
-      currentLocationName: team.location,
+      fullName: team.leader || '',
+      specialization: team.name || '',
+      teamStatus: team.status || 'متاح',
+      currentLocationName: team.location || '',
       phoneNumber: team.phoneNumber || '',
-      city: team.city,
-      street: team.street,
-      email: '',
+      city: team.city || '',
+      street: team.street || '',
+      email: team.email || '',
       password: ''
     });
     setIsEditModalOpen(true);
@@ -256,15 +322,13 @@ export default function MaintenanceTeams() {
 
   const filteredTeams = teams.filter(team => {
     const matchesTab = activeTab === 'الكل' || team.status === activeTab;
-    return matchesTab && (team.name.includes(searchQuery) || team.leader.includes(searchQuery));
+    return matchesTab && (team.name.toLowerCase().includes(searchQuery.toLowerCase()) || team.leader.toLowerCase().includes(searchQuery.toLowerCase()));
   });
 
   const stats = {
     available: teams.filter(t => t.status === 'متاح').length,
     onMission: teams.filter(t => t.status === 'في مهمة').length,
-    unavailable: teams.filter(t => t.status === 'غير متاح').length,
-    totalStaff: teams.length * 4,
-    completedReports: 142
+    unavailable: teams.filter(t => t.status === 'غير متاح').length
   };
 
   const getStatusTheme = (status) => {
@@ -293,7 +357,7 @@ export default function MaintenanceTeams() {
                   <h2 className="text-3xl font-black tracking-tight mb-2">تسجيل قوة ميدانية</h2>
                   <p className="text-emerald-400 text-sm font-bold uppercase tracking-[0.2em]">إضافة وحدة صيانة جديدة للنظام</p>
                 </div>
-                <button onClick={() => setIsModalOpen(false)} className="w-12 h-12 bg-white/10 hover:bg-white/20 backdrop-blur-md rounded-2xl flex items-center justify-center transition-all cursor-pointer group">
+                <button type="button" onClick={() => setIsModalOpen(false)} className="w-12 h-12 bg-white/10 hover:bg-white/20 backdrop-blur-md rounded-2xl flex items-center justify-center transition-all cursor-pointer group">
                   <X size={24} className="group-hover:rotate-90 transition-transform duration-300" />
                 </button>
               </div>
@@ -380,7 +444,7 @@ export default function MaintenanceTeams() {
                   <div className="w-10 h-10 bg-blue-100 text-blue-600 rounded-xl flex items-center justify-center"><Wrench size={20} /></div>
                   <h2 className="text-xl font-black text-slate-800">تعديل بيانات الفريق</h2>
                 </div>
-                <button onClick={() => setIsEditModalOpen(false)} className="p-2 hover:bg-slate-100 rounded-full text-slate-400 cursor-pointer"><X size={20} /></button>
+                <button type="button" onClick={() => setIsEditModalOpen(false)} className="p-2 hover:bg-slate-100 rounded-full text-slate-400 cursor-pointer"><X size={20} /></button>
               </div>
               <form onSubmit={handleUpdateTeam} className="space-y-4">
                 <div className="space-y-1">
@@ -396,7 +460,7 @@ export default function MaintenanceTeams() {
                   <select value={formData.teamStatus} onChange={(e) => setFormData({...formData, teamStatus: e.target.value})} className="w-full bg-slate-50 border-none rounded-2xl py-3 px-4 text-sm focus:ring-2 focus:ring-emerald-500/20 outline-none cursor-pointer">
                     <option value="متاح">متاح</option>
                     <option value="في مهمة">في مهمة</option>
-                    <option value="مشغول">غير متاح</option>
+                    <option value="غير متاح">غير متاح</option>
                   </select>
                 </div>
                 <div className="space-y-1">
@@ -446,7 +510,7 @@ export default function MaintenanceTeams() {
         </div>
       )}
 
-      {/* 🔥 مودال تفاصيل البلاغات المسندة وإدارتها (مع ظهور الزر الفردي بشكل دائم) 🔥 */}
+      {/* مودال تفاصيل البلاغات المسندة وإدارتها */}
       {isDetailsModalOpen && selectedTeam && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-slate-900/50 backdrop-blur-sm" onClick={() => setIsDetailsModalOpen(false)} />
@@ -459,7 +523,7 @@ export default function MaintenanceTeams() {
                   <p className="text-xs text-slate-400">تخصص: {selectedTeam.name}</p>
                 </div>
               </div>
-              <button onClick={() => setIsDetailsModalOpen(false)} className="p-2 hover:bg-white/10 rounded-full text-slate-300 cursor-pointer"><X size={20} /></button>
+              <button type="button" onClick={() => setIsDetailsModalOpen(false)} className="p-2 hover:bg-white/10 rounded-full text-slate-300 cursor-pointer"><X size={20} /></button>
             </div>
 
             <div className="p-8 max-h-[60vh] overflow-y-auto custom-scrollbar">
@@ -467,6 +531,7 @@ export default function MaintenanceTeams() {
                 <h3 className="font-bold text-slate-700 text-sm">قائمة المهام الحالية الموكلة للفريق ({assignedReports.length})</h3>
                 {assignedReports.length > 0 && (
                   <button 
+                    type="button"
                     onClick={() => handleUnassignReports(selectedTeam.id)}
                     disabled={actionLoading}
                     className="flex items-center gap-2 px-4 py-2 bg-amber-50 text-amber-700 hover:bg-amber-600 hover:text-white rounded-xl text-xs font-black transition-all cursor-pointer disabled:opacity-50"
@@ -496,22 +561,22 @@ export default function MaintenanceTeams() {
                         <p className="text-xs text-slate-400 line-clamp-1 mb-2">{report.description}</p>
                         <div className="flex items-center gap-3 text-[11px] font-bold text-slate-500">
                           <span className="bg-slate-200/60 px-2 py-0.5 rounded">{report.categoryName}</span>
-                          <span className="flex items-center gap-1"><MapPin size={10} /> {report.latitude.toFixed(4)}, {report.longitude.toFixed(4)}</span>
+                          <span className="flex items-center gap-1">
+                            <MapPin size={10} /> {report.latitude?.toFixed(4) || '0.0000'}, {report.longitude?.toFixed(4) || '0.0000'}
+                          </span>
                         </div>
                       </div>
                       
-                      {/* منطقة التحكم بالبلاغ الفردي: تم إظهار الزر الفردي بشكل دائم بجانب الـ Badge ✅ */}
                       <div className="flex items-center gap-3">
                         <span className="px-3 py-1 bg-amber-100 text-amber-700 font-black text-[10px] rounded-lg">
                           {report.status}
                         </span>
                         
-                        {/* 🔥 الزر الفردي لفك ارتباط مهمة فردية (تم التأكد من ظهوره) ✅ */}
                         <button
+                          type="button"
                           onClick={() => handleUnassignSingleReport(report.id)}
                           disabled={actionLoading}
                           title="فك ارتباط هذا البلاغ فقط"
-                          // ✅ تم إزالة opacity-0 لتصحيح Bug الاختفاء على شاشات الموبايل ✅
                           className="p-2 bg-rose-50 text-rose-600 hover:bg-rose-600 hover:text-white rounded-xl transition-all cursor-pointer opacity-100 disabled:opacity-50"
                         >
                           <Link2Off size={16} />
@@ -524,8 +589,77 @@ export default function MaintenanceTeams() {
             </div>
             
             <div className="px-8 py-4 bg-slate-50 border-t border-slate-100 flex justify-end">
-              <button onClick={() => setIsDetailsModalOpen(false)} className="px-6 py-2.5 bg-slate-200 text-slate-700 hover:bg-slate-300 font-bold text-xs rounded-xl cursor-pointer transition-all">إغلاق</button>
+              <button type="button" onClick={() => setIsDetailsModalOpen(false)} className="px-6 py-2.5 bg-slate-200 text-slate-700 hover:bg-slate-300 font-bold text-xs rounded-xl cursor-pointer transition-all">إغلاق</button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* ⚡ مودال المحادثة الفورية (Chat Modal) - مخصص للويب */}
+      {activeChatTeam && (
+        <div className="fixed inset-0 z-[600] flex items-center justify-center bg-black/85 backdrop-blur-sm p-4">
+          <div className="bg-[#111] border border-slate-800 w-full max-w-xl h-[600px] rounded-[2rem] overflow-hidden shadow-2xl flex flex-col animate-modal">
+            
+            {/* هيدر المودال */}
+            <div className="p-5 border-b border-slate-800 flex justify-between items-center bg-[#0b0b0b]">
+              <div className="flex items-center gap-3">
+                <div className="w-3 h-3 rounded-full bg-emerald-500 animate-pulse" />
+                <div>
+                  <h3 className="text-base font-black text-white">{activeChatTeam.leader || activeChatTeam.name}</h3>
+                  <p className="text-xs text-slate-500">فريق صيانة • تواصل مباشر</p>
+                </div>
+              </div>
+              <button 
+                onClick={() => setActiveChatTeam(null)} 
+                className="p-2 bg-slate-900 hover:bg-slate-800 text-slate-400 hover:text-white rounded-xl transition-all border border-slate-800 cursor-pointer"
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            {/* منطقة عرض الرسائل */}
+            <div className="flex-1 overflow-y-auto p-5 space-y-4 hide-scrollbar bg-black/40">
+              {chatMessages.length === 0 ? (
+                <div className="h-full flex items-center justify-center text-center p-6">
+                  <p className="text-sm text-slate-600 leading-relaxed max-w-xs">
+                    لا توجد رسائل سابقة مع هذا الفريق. ابدأ التوجيه والإشراف على المهام الميدانية.
+                  </p>
+                </div>
+              ) : (
+                chatMessages.map((msg) => {
+                  const isHQ = msg.senderId === "HQ_Admin";
+                  return (
+                    <div key={msg.id} className={`flex flex-col ${isHQ ? 'items-start' : 'items-end'}`}>
+                      <span className="text-[10px] text-slate-600 mb-1 px-1">
+                        {isHQ ? "غرفة العمليات - الصيانة" : (msg.senderName || "الفريق الميداني")}
+                      </span>
+                      <div className={`max-w-[80%] rounded-2xl px-4 py-2.5 text-sm leading-relaxed shadow-md font-medium ${isHQ ? 'bg-emerald-600 text-white rounded-tr-none' : 'bg-slate-900 text-slate-200 rounded-tl-none border border-slate-800'}`}>
+                        {msg.text}
+                      </div>
+                    </div>
+                  );
+                })
+              )}
+              <div ref={messagesEndRef} />
+            </div>
+
+            {/* حقل الإرسال الأسفل */}
+            <form onSubmit={handleSendChatMessage} className="p-4 border-t border-slate-800 bg-[#0b0b0b] flex gap-3 items-center">
+              <input 
+                type="text" 
+                value={inputChatMessage}
+                onChange={(e) => setInputChatMessage(e.target.value)}
+                placeholder="اكتب توجيهات غرفة العمليات هنا..."
+                className="flex-1 bg-black border border-slate-800 rounded-xl py-3 px-4 text-sm focus:border-emerald-500 outline-none text-white transition-all placeholder:text-slate-600"
+              />
+              <button 
+                type="submit"
+                disabled={!inputChatMessage.trim()}
+                className={`p-3 rounded-xl transition-all flex items-center justify-center ${inputChatMessage.trim() ? 'bg-emerald-600 text-white cursor-pointer hover:bg-emerald-700' : 'bg-slate-900 text-slate-600 cursor-not-allowed'}`}
+              >
+                <Send size={18} className="transform rotate-180" />
+              </button>
+            </form>
           </div>
         </div>
       )}
@@ -539,24 +673,23 @@ export default function MaintenanceTeams() {
           </div>
           <div className="flex items-center gap-3 w-full md:w-auto">
             <div className="relative flex-1 md:w-80"><Search className="absolute right-4 top-2.5 text-slate-400" size={18} /><input type="text" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} placeholder="ابحث عن تخصص أو قائد..." className="w-full pr-12 pl-4 py-2.5 rounded-xl border-none bg-slate-100 focus:ring-2 focus:ring-emerald-500/20 outline-none text-sm font-medium" /></div>
-            <button onClick={() => {resetForm(); setIsModalOpen(true);}} className="bg-slate-900 text-white px-5 py-2.5 rounded-xl hover:bg-slate-800 transition-all shadow-lg flex items-center gap-2 text-sm font-bold cursor-pointer"><Plus size={18} /> إضافة فريق</button>
+            <button type="button" onClick={() => {resetForm(); setIsModalOpen(true);}} className="bg-slate-900 text-white px-5 py-2.5 rounded-xl hover:bg-slate-800 transition-all shadow-lg flex items-center gap-2 text-sm font-bold cursor-pointer"><Plus size={18} /> إضافة فريق</button>
           </div>
         </div>
       </nav>
 
       <div className="max-w-7xl mx-auto mt-8 px-6">
         {/* صناديق الإحصائيات */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-          <StatBox icon={CheckCircle2} label="جاهز" value={stats.available} color="text-emerald-600" bg="bg-emerald-50" />
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-8">
+          <StatBox icon={CheckCircle2} label="متاح" value={stats.available} color="text-emerald-600" bg="bg-emerald-50" />
           <StatBox icon={Clock} label="في مهمة" value={stats.onMission} color="text-amber-600" bg="bg-amber-50" />
-          <StatBox icon={Users} label="الفنيين" value={stats.totalStaff} color="text-slate-600" bg="bg-slate-100" />
-          <StatBox icon={Wrench} label="بلاغات منجزة" value={stats.completedReports} color="text-blue-600" bg="bg-blue-50" />
+          <StatBox icon={Users} label="غير متاح" value={stats.unavailable} color="text-slate-600" bg="bg-slate-100" />
         </div>
 
         {/* التبويبات */}
         <div className="flex gap-8 mb-6 border-b border-slate-200 pb-1">
           {['الكل', 'متاح', 'في مهمة', 'غير متاح'].map((tab) => (
-            <button key={tab} onClick={() => setActiveTab(tab)} className={`pb-3 text-sm font-bold transition-all relative cursor-pointer ${activeTab === tab ? 'text-emerald-600' : 'text-slate-400 hover:text-slate-600'}`}>
+            <button key={tab} type="button" onClick={() => setActiveTab(tab)} className={`pb-3 text-sm font-bold transition-all relative cursor-pointer ${activeTab === tab ? 'text-emerald-600' : 'text-slate-400 hover:text-slate-600'}`}>
               {tab}
               {activeTab === tab && <div className="absolute bottom-0 right-0 left-0 h-1 bg-emerald-600 rounded-full" />}
             </button>
@@ -573,12 +706,12 @@ export default function MaintenanceTeams() {
               return (
                 <div key={team.id} className="bg-white border border-slate-200 rounded-[1.5rem] p-5 hover:shadow-xl transition-all group animate-in fade-in slide-in-from-bottom-4 duration-500">
                   <div className="flex justify-between items-start mb-4">
-                    <div className={`p-2 rounded-xl $ش{theme.bg} ${theme.text}`}><Wrench size={20} /></div>
+                    <div className={`p-2 rounded-xl ${theme.bg} ${theme.text}`}><Wrench size={20} /></div>
                     <span className={`px-3 py-1 rounded-lg text-[10px] font-black uppercase tracking-wider ${theme.bg} ${theme.text}`}>{team.status}</span>
                   </div>
                   <h3 className="font-bold text-slate-800 mb-1 group-hover:text-emerald-600 transition-colors">التخصص: {team.name}</h3>
                   <div className="flex items-center gap-1.5 text-slate-400 text-xs mb-4 font-medium">
-                    <MapPin size={12} /> الموقع: {team.city || 'غير محدد'} - {team.street || 'غير محدد'} ({team.location})
+                    <MapPin size={12} /> الموقع: {team.city || 'غير محدد'} - {team.street || 'غير محدد'} ({team.location || 'لا يوجد تمركز'})
                   </div>
                   
                   <div className="flex items-center gap-1.5 text-slate-400 text-xs mb-4 font-medium">
@@ -587,6 +720,7 @@ export default function MaintenanceTeams() {
 
                   <div className="mb-4">
                     <button 
+                      type="button"
                       onClick={() => openDetailsModal(team)}
                       className="w-full py-2.5 bg-slate-50 hover:bg-slate-100 text-slate-700 font-bold text-xs rounded-xl flex items-center justify-center gap-2 border border-slate-200/60 transition-all cursor-pointer"
                     >
@@ -598,8 +732,16 @@ export default function MaintenanceTeams() {
                   <div className="flex items-center justify-between pt-4 border-t border-slate-50">
                     <div className="flex flex-col"><span className="text-[10px] font-bold text-slate-400 uppercase">المسؤول</span><span className="text-sm font-bold text-slate-700">{team.leader}</span></div>
                     <div className="flex gap-2">
-                      <button onClick={() => window.location.href = `tel:${team.phoneNumber}`} className="p-2.5 bg-slate-50 text-slate-600 rounded-xl hover:bg-emerald-500 hover:text-white transition-all cursor-pointer"><Phone size={16} /></button>
-                      <button onClick={() => openEditModal(team)} className="flex items-center gap-1 px-3 py-2 bg-emerald-50 text-emerald-700 rounded-xl hover:bg-emerald-600 hover:text-white transition-all text-xs font-bold cursor-pointer">تعديل <ChevronLeft size={14} /></button>
+                      {/* زر الشات المباشر - يفتح مودال المحادثة */}
+                      <button 
+                        type="button"
+                        onClick={() => setActiveChatTeam(team)} 
+                        title="فتح محادثة فورية مع الفريق"
+                        className="p-2.5 bg-slate-50 text-slate-600 rounded-xl hover:bg-emerald-500 hover:text-white transition-all cursor-pointer"
+                      >
+                        <MessageSquare size={16} />
+                      </button>
+                      <button type="button" onClick={() => openEditModal(team)} className="flex items-center gap-1 px-3 py-2 bg-emerald-50 text-emerald-700 rounded-xl hover:bg-emerald-600 hover:text-white transition-all text-xs font-bold cursor-pointer">تعديل <ChevronLeft size={14} /></button>
                     </div>
                   </div>
                 </div>
@@ -608,6 +750,19 @@ export default function MaintenanceTeams() {
           </div>
         )}
       </div>
+
+      {/* إضافة ستايل الـ animate-modal */}
+      <style>{`
+        .hide-scrollbar::-webkit-scrollbar { display: none; }
+        .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        @keyframes modalFadeIn {
+          from { opacity: 0; transform: scale(0.95); }
+          to { opacity: 1; transform: scale(1); }
+        }
+        .animate-modal {
+          animation: modalFadeIn 0.2s ease-out forwards;
+        }
+      `}</style>
     </div>
   );
 }

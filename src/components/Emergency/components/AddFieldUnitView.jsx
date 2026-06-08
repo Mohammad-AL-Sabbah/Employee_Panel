@@ -54,8 +54,8 @@ const AddFieldUnitView = () => {
 
     try {
       const response = await ApiAuthToken.post('/emergency-employee/add-emergency-unit-direct', {
-        userName: formData.userName, // 🆕 اسم القائد
-        fullName: formData.fullName,
+        fullName: formData.userName, // 🆕 اسم القائد
+        userName: formData. fullName,
         email: formData.email,
         phoneNumber: formData.phoneNumber,
         password: formData.password,
@@ -122,11 +122,11 @@ const AddFieldUnitView = () => {
                 <form onSubmit={handleSubmit} className="space-y-5">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-xs font-semibold text-slate-400 mb-2">اسم قائد الوحدة (UserName)</label>
+                      <label className="block text-xs font-semibold text-slate-400 mb-2">اسم قائد الوحدة </label>
                       <input type="text" required name="userName" value={formData.userName} onChange={handleChange} className="w-full bg-black/40 border border-slate-800 rounded-xl py-3 px-4 text-sm text-white focus:border-blue-500 outline-none" />
                     </div>
                     <div>
-                      <label className="block text-xs font-semibold text-slate-400 mb-2">اسم الفرقة الميدانية (FullName)</label>
+                      <label className="block text-xs font-semibold text-slate-400 mb-2">اسم الفرقة الميدانية </label>
                       <input type="text" required name="fullName" value={formData.fullName} onChange={handleChange} className="w-full bg-black/40 border border-slate-800 rounded-xl py-3 px-4 text-sm text-white focus:border-blue-500 outline-none" />
                     </div>
                   </div>

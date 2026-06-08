@@ -56,7 +56,7 @@ function AdminControlPanel() {
               <QuickCard icon={UserPlus} label="إضافة موظف" to="/ManageStaff" active />
               <QuickCard icon={History} label="سجلات الموظفين" to="/StaffLogs" />
               <QuickCard icon={Ticket} label="تذاكر الموظفين" to="/SupportTickets" />
-              <QuickCard icon={Users} label="إدارة الرتب" to="#" />
+              <QuickCard icon={Users} label="إدارة الرتب" to="/users" />
             </div>
           </div>
 

@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-import EmergencyReportsPanel from '../../components/Emergency/components/EmergencyReportsPanel';
 // افترضنا أن هذا هو مكون الخريطة لديك
 import EmergencyMap from '../../components/Emergency/components/EmergencyMap'; 
 
@@ -31,11 +30,7 @@ const ReportsPage = () => {
         </div>
       </div>
 
-      {/* الـ Panel الجانبي المصلح الذي يسحب البيانات من الـ API */}
-      <EmergencyReportsPanel 
-        onLocateOnMap={handleLocateOnMap} 
-        onViewAll={handleViewAll} 
-      />
+    
 
     </div>
   );

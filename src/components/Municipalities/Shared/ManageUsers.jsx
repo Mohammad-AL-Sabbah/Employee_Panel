@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { 
   Users as UsersIcon, Search, ShieldCheck, MapPin, 
   Smartphone, Eye, Ban, SearchX, Lock, Unlock, Loader2,
-  ChevronLeft, ChevronRight, X, Mail, Phone, User, Info, Calendar, Trash2
+  ChevronLeft, ChevronRight, X, Mail, Phone, User, Info, Calendar, Trash2, Award, Check
 } from 'lucide-react';
 import ApiAuthToken from '../../../Api/ApiAuthToken';
 
@@ -18,6 +18,9 @@ const Users = () => {
   const [selectedUser, setSelectedUser] = useState(null);
   const [showPopup, setShowPopup] = useState(false);
   
+  // ✅ حالة الرتبة المحددة داخل الـ Dropdown وزر التأكيد
+  const [pendingRole, setPendingRole] = useState("");
+
   // إعدادات الـ Pagination
   const [currentPage, setCurrentPage] = useState(1);
   const [usersPerPage] = useState(10);
@@ -40,7 +43,7 @@ const Users = () => {
         const formattedUsers = response.data.users.map(user => ({
           id: user.id,
           name: user.fullName || user.name,
-          type: user.accountType === "موظف بلدية" ? "Staff" : "Citizen",
+          type: user.accountType === "موظف بلدية" || user.accountType === "SuperAdmin" || user.accountType === "MunicipalEmployee" ? "Staff" : "Citizen",
           role: user.accountType,
           email: user.email,
           phoneNumber: user.phoneNumber || "غير متوفر",
@@ -76,7 +79,6 @@ const Users = () => {
           u.id === userId ? { ...u, isBanned: !isCurrentlyBanned } : u
         ));
         
-        // تحديث البيانات في الـ Popup إذا كان مفتوحاً
         if (selectedUser && selectedUser.id === userId) {
           setSelectedUser(prev => ({ ...prev, isBanned: !isCurrentlyBanned }));
         }
@@ -94,7 +96,7 @@ const Users = () => {
     }
   };
 
-  // ✅ دالة الحذف النهائي للمواطن المسؤول عنها الـ الـ End-Point المضافة
+  // ✅ دالة الحذف النهائي للمواطن
   const handleDeleteCitizen = async (userId, userName) => {
     const confirmDelete = window.confirm(`تنبيه أمني حساس: هل أنت متأكد تماماً من رغبتك في حذف المواطن "${userName}" نهائياً من قاعدة البيانات؟ لا يمكن التراجع عن هذا الإجراء!`);
     
@@ -107,12 +109,10 @@ const Users = () => {
       if (response.status === 200 || response.data.success) {
         alert("تم حذف حساب المواطن نهائياً وبنجاح من النظام.");
         
-        // إغلاق البوب آب فوراً لو كان معروضاً بداخله
         if (showPopup && selectedUser?.id === userId) {
           closePopup();
         }
 
-        // إزاحة وحذف المستخدم من الـ state محلياً لتحديث الجدول فوراً
         setUsersData(prev => prev.filter(u => u.id !== userId));
       } else {
         alert(response.data.message || "فشلت عملية الحذف، يرجى التحقق من الصلاحيات.");
@@ -125,11 +125,47 @@ const Users = () => {
     }
   };
 
+  // ✅ دالة تغيير رتبة الموظف المعدلة مع التأكيد الحامي من الأخطاء البشرية
+  const handleUpdateRole = async () => {
+    if (!selectedUser || !pendingRole || pendingRole === selectedUser.role) return;
+    
+    const confirmChange = window.confirm(`تأكيد إداري: هل أنت متأكد من تغيير رتبة الموظف "${selectedUser.name}" من (${selectedUser.role}) إلى (${pendingRole})؟`);
+    if (!confirmChange) return;
+
+    setActionLoading(selectedUser.id);
+    try {
+      const response = await ApiAuthToken.put('/Admin/update-role', {
+        userId: selectedUser.id,
+        newRole: pendingRole
+      });
+
+      if (response.status === 200 || response.data.success) {
+        alert("تم تحديث رتبة الموظف وصلاحياته بنجاح.");
+        
+        // تحديث البيانات محلياً في الجدول
+        setUsersData(prev => prev.map(u => 
+          u.id === selectedUser.id ? { ...u, role: pendingRole } : u
+        ));
+
+        // تحديث البيانات في الـ Popup المفتوح وإعادة تصفير الـ pendingRole
+        setSelectedUser(prev => ({ ...prev, role: pendingRole }));
+        setPendingRole(""); 
+      } else {
+        alert(response.data.message || "فشلت عملية تحديث الرتبة.");
+      }
+    } catch (err) {
+      console.error("Error updating role:", err);
+      alert(err.response?.data?.message || "حدث خطأ أثناء محاولة تعديل الرتبة.");
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
   // ✅ دالة عرض تفاصيل المستخدم في Popup
   const viewUserDetails = (user) => {
     setSelectedUser(user);
+    setPendingRole(""); // تصفير الاختيار المعلق عند فتح أي مستخدم جديد
     setShowPopup(true);
-    // منع التمرير في الخلفية
     document.body.style.overflow = 'hidden';
   };
 
@@ -137,6 +173,7 @@ const Users = () => {
   const closePopup = () => {
     setShowPopup(false);
     setSelectedUser(null);
+    setPendingRole("");
     document.body.style.overflow = 'auto';
   };
 
@@ -144,7 +181,6 @@ const Users = () => {
     document.title = "إدارة المستخدمين | P.S.R.S";
     fetchUsers();
     
-    // تنظيف عند إزالة المكون
     return () => {
       document.body.style.overflow = 'auto';
     };
@@ -153,7 +189,7 @@ const Users = () => {
   // فلترة المستخدمين
   const filteredUsers = usersData.filter(user => {
     const matchesTab = activeTab === "الكل" || user.type === activeTab;
-    const matchesSearch = user.name?.includes(searchTerm) || user.email?.includes(searchTerm);
+    const matchesSearch = user.name?.toLowerCase().includes(searchTerm.toLowerCase()) || user.email?.toLowerCase().includes(searchTerm.toLowerCase());
     return matchesTab && matchesSearch;
   });
 
@@ -163,17 +199,12 @@ const Users = () => {
   const currentUsers = filteredUsers.slice(indexOfFirstUser, indexOfLastUser);
   const totalPages = Math.ceil(filteredUsers.length / usersPerPage);
 
-  // دوال التنقل بين الصفحات
   const goToNextPage = () => {
-    if (currentPage < totalPages) {
-      setCurrentPage(currentPage + 1);
-    }
+    if (currentPage < totalPages) setCurrentPage(currentPage + 1);
   };
 
   const goToPrevPage = () => {
-    if (currentPage > 1) {
-      setCurrentPage(currentPage - 1);
-    }
+    if (currentPage > 1) setCurrentPage(currentPage - 1);
   };
 
   const goToPage = (pageNumber) => {
@@ -185,9 +216,7 @@ const Users = () => {
     const maxPagesToShow = 5;
     
     if (totalPages <= maxPagesToShow) {
-      for (let i = 1; i <= totalPages; i++) {
-        pageNumbers.push(i);
-      }
+      for (let i = 1; i <= totalPages; i++) pageNumbers.push(i);
     } else {
       const startPage = Math.max(1, currentPage - 2);
       const endPage = Math.min(totalPages, currentPage + 2);
@@ -196,17 +225,12 @@ const Users = () => {
         pageNumbers.push(1);
         if (startPage > 2) pageNumbers.push('...');
       }
-      
-      for (let i = startPage; i <= endPage; i++) {
-        pageNumbers.push(i);
-      }
-      
+      for (let i = startPage; i <= endPage; i++) pageNumbers.push(i);
       if (endPage < totalPages) {
         if (endPage < totalPages - 1) pageNumbers.push('...');
         pageNumbers.push(totalPages);
       }
     }
-    
     return pageNumbers;
   };
 
@@ -303,7 +327,7 @@ const Users = () => {
               <thead>
                 <tr className="bg-slate-50/80 border-b border-slate-100">
                   <th className="p-5 text-[11px] font-black text-slate-400 uppercase">المستخدم</th>
-                  <th className="p-5 text-[11px] font-black text-slate-400 uppercase text-center">نوع الحساب</th>
+                  <th className="p-5 text-[11px] font-black text-slate-400 uppercase text-center">نوع الحساب / الرتبة</th>
                   <th className="p-5 text-[11px] font-black text-slate-400 uppercase text-center">الإجراءات</th>
                 </tr>
               </thead>
@@ -365,7 +389,6 @@ const Users = () => {
                                 <span>{user.isBanned ? "فك الحظر" : "حظر"}</span>
                               </button>
 
-                              {/* زر الحذف الحاد المدمج بناء على دالة الـ Controller الجديدة للمواطنين فقط */}
                               {user.type === "Citizen" && (
                                 <button
                                   onClick={() => handleDeleteCitizen(user.id, user.name)}
@@ -422,20 +445,18 @@ const Users = () => {
         )}
       </div>
 
-      {/* ✅ Popup لعرض تفاصيل المستخدم مع Blur للخلفية */}
+      {/* ✅ Popup تفاصيل المستخدم المحسن والآمن إدارياً */}
       {showPopup && selectedUser && (
         <>
-          {/* الخلفية المعتمة مع Blur */}
           <div 
             className="fixed inset-0 bg-black/50 backdrop-blur-md z-50 flex items-center justify-center p-4"
             onClick={closePopup}
           >
-            {/* محتوى الـ Popup */}
             <div 
               className="bg-white rounded-[2rem] max-w-md w-full overflow-hidden shadow-2xl animate-in fade-in zoom-in duration-300"
               onClick={(e) => e.stopPropagation()}
             >
-              {/* رأس الـ Popup مع صورة الخلفية */}
+              {/* رأس الـ Popup */}
               <div className="relative bg-gradient-to-r from-emerald-600 to-emerald-800 p-6 text-white">
                 <button 
                   style={{cursor:"pointer"}}
@@ -461,7 +482,7 @@ const Users = () => {
                 </div>
               </div>
 
-              {/* جسم الـ Popup مع المعلومات */}
+              {/* جسم الـ Popup والمعلومات */}
               <div className="p-6 space-y-4">
                 <div className="grid grid-cols-2 gap-4">
                   <div className="bg-slate-50 rounded-xl p-3 text-center">
@@ -491,7 +512,6 @@ const Users = () => {
                   </div>
                 </div>
 
-                {/* معلومات إضافية */}
                 <div className="bg-slate-50 rounded-xl p-3">
                   <div className="flex justify-between items-center">
                     <span className="text-[9px] text-slate-400 font-bold">المعرف (ID)</span>
@@ -505,15 +525,60 @@ const Users = () => {
                   )}
                 </div>
 
-                {/* أزرار الإجراءات في الـ Popup */}
+                {/* ✅ تعديل قسم إدارة الرتب لمنع الوقوع في الأخطاء البشرية */}
+                {userRole === "SuperAdmin" && selectedUser.type === "Staff" && (
+                  <div className="bg-amber-50/60 border border-amber-200/70 rounded-2xl p-4 space-y-3">
+                    <label className="text-[11px] font-black text-amber-800 flex items-center gap-2">
+                      <Award size={14} /> تعديل الصلاحية أو الرتبة الوظيفية:
+                    </label>
+                    <div className="flex gap-2">
+                      <select
+                        value={pendingRole || ""}
+                        disabled={actionLoading === selectedUser.id}
+                        onChange={(e) => setPendingRole(e.target.value)}
+                        className="flex-1 bg-white border border-amber-200 rounded-xl p-2.5 text-xs font-bold outline-none focus:border-amber-500 shadow-sm text-slate-700 cursor-pointer"
+                      >
+                        {/* خيار افتراضي يعرض الحالة الحالية ولا يقبل الإرسال */}
+                        <option value="" disabled>
+                          اختر رتبة جديدة... (الحالية: {selectedUser.role})
+                        </option>
+                        {/* منع ظهور الرتبة الحالية كخيار متاح وقابل للاختيار لعدم استهلاك API بدون تغيير */}
+                        {selectedUser.role !== "MunicipalEmployee" && (
+                          <option value="MunicipalEmployee">MunicipalEmployee (موظف بلدية)</option>
+                        )}
+                        {selectedUser.role !== "SuperAdmin" && (
+                          <option value="SuperAdmin">SuperAdmin (مدير عام)</option>
+                        )}
+                      </select>
+
+                      {/* زر التأكيد المنفصل لحماية تجربة المستخدم من التغيير الفوري */}
+                      <button
+                        onClick={handleUpdateRole}
+                        disabled={actionLoading === selectedUser.id || !pendingRole || pendingRole === selectedUser.role}
+                        className={`px-4 py-2 rounded-xl flex items-center justify-center gap-1 text-xs font-black transition-all ${
+                          pendingRole && pendingRole !== selectedUser.role
+                            ? "bg-amber-500 text-white shadow-md hover:bg-amber-600 cursor-pointer"
+                            : "bg-slate-100 text-slate-400 border border-slate-200 cursor-not-allowed"
+                        }`}
+                      >
+                        {actionLoading === selectedUser.id ? (
+                          <Loader2 size={14} className="animate-spin" />
+                        ) : (
+                          <Check size={14} />
+                        )}
+                        <span>تأكيد</span>
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                {/* أزرار الحظر والحذف في الـ Popup */}
                 {canControl(selectedUser.type) && (
                   <div className="flex flex-col gap-2 pt-2">
                     <div className="flex gap-3">
                       <button 
                         style={{cursor:"pointer"}}
-                        onClick={() => {
-                          toggleBan(selectedUser.id, selectedUser.isBanned);
-                        }}
+                        onClick={() => toggleBan(selectedUser.id, selectedUser.isBanned)}
                         disabled={actionLoading === selectedUser.id}
                         className={`flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-xl transition-all text-sm font-bold cursor-pointer ${
                           selectedUser.isBanned 
@@ -532,7 +597,6 @@ const Users = () => {
                       </button>
                     </div>
 
-                    {/* زر الحذف النهائي التابع للمواطنين داخل الـ Popup أيضاً */}
                     {selectedUser.type === "Citizen" && (
                       <button
                         style={{cursor:"pointer"}}

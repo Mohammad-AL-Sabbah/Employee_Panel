@@ -1,189 +1,398 @@
-/* eslint-disable no-unused-vars */
-import React, { useState, useMemo } from 'react';
-import { 
-  Search, User, Phone, Mail, MapPin, 
-  Filter, ChevronRight, ChevronLeft, 
-  Briefcase, Circle, UserCheck, UserX, 
-  Clock, ArrowUpDown
-} from 'lucide-react';
-
+import React, { useState, useEffect, useMemo } from 'react';
+import { UserPlus, Users, RefreshCw, X, User, Search, ChevronRight, ChevronLeft, Upload, Mail, Phone, Lock, MapPin, Loader2 } from 'lucide-react';
 import EmergencySidebar from './EmergencySidebar';
+import ApiAuthToken from '../../../Api/ApiAuthToken';
 
 const EmergencyStaffStatus = () => {
+  const [staffList, setStaffList] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [isModalOpen, setIsModalOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
-  const [statusFilter, setStatusFilter] = useState("all");
   const [currentPage, setCurrentPage] = useState(1);
-  const recordsPerPage = 10;
+  const [imagePreview, setImagePreview] = useState(null);
+  
+  const recordsPerPage = 8;
 
-  // بيانات الكادر البشري
-  const [staffList] = useState([
-    { id: 'ST-001', name: 'أحمد ياسين', position: 'مشرف عمليات', location: 'قسم الطوارئ - نابلس', status: 'متاح', phone: '0599000111', email: 'a.yassin@dispatch.ps' },
-    { id: 'ST-002', name: 'سارة خالد', position: 'مستقبل بلاغات', location: 'قسم الطوارئ - رام الله', status: 'مشغول', phone: '0599000222', email: 's.khaled@dispatch.ps' },
-    { id: 'ST-003', name: 'محمد علي', position: 'مدير نوبة', location: 'قسم الطوارئ - الخليل', status: 'في إجازة', phone: '0599000333', email: 'm.ali@dispatch.ps' },
-    { id: 'ST-004', name: 'لينا المصري', position: 'فني نظم', location: 'قسم الطوارئ - جنين', status: 'متاح', phone: '0599000444', email: 'l.masri@dispatch.ps' },
-    { id: 'ST-005', name: 'عمر القاسم', position: 'محلل بيانات', location: 'قسم الطوارئ - طولكرم', status: 'غير متاح', phone: '0599000555', email: 'o.qasem@dispatch.ps' },
-    { id: 'ST-006', name: 'رنا منصور', position: 'مشرف اتصالات', location: 'قسم الطوارئ - أريحا', status: 'متاح', phone: '0599000666', email: 'r.mansour@dispatch.ps' },
-  ]);
+  // الحقول الأساسية للفورم
+  const [formData, setFormData] = useState({
+    fullName: "", 
+    userName: "", 
+    email: "", 
+    phoneNumber: "", 
+    password: "", 
+    city: "", 
+    profilePicture: null
+  });
 
-  // منطق الفلترة والبحث
+  // جلب موظفي الطوارئ من السيرفر
+  const fetchEmergencyEmployees = async () => {
+    setLoading(true);
+    try {
+      const response = await ApiAuthToken.get('/emergency-employee/emergency-employees');
+      setStaffList(response.data);
+    } catch (error) {
+      console.error("Error fetching staff:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => { 
+    fetchEmergencyEmployees(); 
+  }, []);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm]);
+
+  // منطق تصفية البحث للجدول
   const filteredStaff = useMemo(() => {
-    return staffList.filter(staff => {
-      const matchesSearch = staff.name.includes(searchTerm) || staff.position.includes(searchTerm) || staff.location.includes(searchTerm);
-      const matchesStatus = statusFilter === "all" || staff.status === statusFilter;
-      return matchesSearch && matchesStatus;
-    });
-  }, [searchTerm, statusFilter, staffList]);
+    return staffList.filter(s => 
+      s.fullName?.toLowerCase().includes(searchTerm.toLowerCase()) || 
+      s.userName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      s.email?.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+  }, [searchTerm, staffList]);
 
   const totalPages = Math.ceil(filteredStaff.length / recordsPerPage) || 1;
   const currentRecords = filteredStaff.slice((currentPage - 1) * recordsPerPage, currentPage * recordsPerPage);
 
-  const getStatusColor = (status) => {
-    switch (status) {
-      case 'متاح': return 'text-emerald-500 bg-emerald-500/10 border-emerald-500/20';
-      case 'مشغول': return 'text-amber-500 bg-amber-500/10 border-amber-500/20';
-      case 'في إجازة': return 'text-blue-500 bg-blue-500/10 border-blue-500/20';
-      case 'غير متاح': return 'text-red-500 bg-red-500/10 border-red-500/20';
-      default: return 'text-slate-500 bg-slate-500/10 border-slate-500/20';
+  // معالجة تغيير ومعاينة الصورة
+  const handleImageChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      setFormData(prev => ({ ...prev, profilePicture: file }));
+      setImagePreview(URL.createObjectURL(file));
+    }
+  };
+
+  // إغلاق المودال وتفريغ الحقول
+  const handleCloseModal = () => {
+    setIsModalOpen(false);
+    setImagePreview(null);
+    setFormData({ 
+      fullName: "", 
+      userName: "", 
+      email: "", 
+      phoneNumber: "", 
+      password: "", 
+      city: "", 
+      profilePicture: null 
+    });
+  };
+
+  // دالة الحفظ المحدثة والمطابقة لـ Swagger
+  const handleSave = async (e) => {
+    e.preventDefault();
+    setSubmitting(true);
+    
+    try {
+      const data = new FormData();
+      
+      // 1. إضافة الحقول الأساسية المتوقعة من السيرفر بنظام PascalCase للمفاتيح
+      data.append("FullName", formData.fullName.trim());
+      data.append("UserName", formData.userName.trim());
+      data.append("Email", formData.email.trim());
+      data.append("PhoneNumber", formData.phoneNumber.trim());
+      data.append("Password", formData.password);
+      data.append("City", formData.city.trim());
+      
+      // نرسل الصورة فقط إذا تم اختيار ملف حقيقي لتجنب مشاكل الـ null النصي
+      if (formData.profilePicture && formData.profilePicture instanceof File) {
+        data.append("ProfilePicture", formData.profilePicture);
+      }
+      
+      // 2. إرسال الحقول الخفية المطلوبة في كواليس الفرونت إند بدقة
+      data.append("Role", "EmergencyEmployee");
+      data.append("UnitType", "");
+      data.append("CenterId", parseInt(0, 10)); // تحويل صريح إلى رقم متوافق مع integer السيرفر
+
+      // إرسال الطلب
+      const response = await ApiAuthToken.post('/emergency-employee/add-emergency-employee', data, {
+        headers: { 
+          'Content-Type': 'multipart/form-data'
+        }
+      });
+
+      if (response.status === 200 || response.status === 201 || response.data) {
+        alert("تم إضافة موظف الطوارئ بنجاح");
+        handleCloseModal();
+        fetchEmergencyEmployees();
+      }
+    } catch (error) {
+      console.error("تفاصيل الخطأ الكاملة:", error.response?.data || error.message);
+      const serverError = error.response?.data;
+      let errorMessage = "حدث خطأ أثناء إضافة الموظف.";
+      
+      if (serverError && typeof serverError === 'object') {
+        errorMessage = JSON.stringify(serverError);
+      } else if (typeof serverError === 'string') {
+        errorMessage = serverError;
+      }
+      
+      alert(`فشلت الإضافة: ${errorMessage}`);
+    } finally {
+      setSubmitting(false);
     }
   };
 
   return (
-    <div className="flex flex-col h-screen w-full bg-black overflow-hidden font-sans text-slate-300" dir="rtl">
-      <style>{`
-        .hide-scrollbar::-webkit-scrollbar { display: none; }
-        .truncate-text { display: -webkit-box; -webkit-line-clamp: 1; -webkit-box-orient: vertical; overflow: hidden; }
-      `}</style>
-
-
+    <div className="flex flex-col h-screen w-full bg-[#030303] text-slate-300 antialiased font-sans" dir="rtl">
       <div className="flex flex-1 overflow-hidden">
-        <aside className="w-64 h-full flex-shrink-0 border-l border-slate-800 bg-[#050505] z-50">
+        {/* القائمة الجانبية */}
+        <aside className="w-64 border-l border-slate-900 bg-[#050505]">
           <EmergencySidebar isOpen={true} />
         </aside>
 
-        <main className="flex-1 h-full overflow-y-auto bg-black p-6 hide-scrollbar">
-          <div className="max-w-[1600px] p-3 mx-auto">
+        {/* المحتوى الرئيسي */}
+        <main className="flex-1 overflow-y-auto p-8 bg-[#030303]">
+          <div className="max-w-6xl mx-auto space-y-6">
             
-            {/* الهيدر الوظيفي */}
-            <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center mb-8 gap-4">
+            {/* الهيدر وأدوات التحكم والبحث */}
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-[#070707] border border-slate-900 p-6 rounded-2xl">
               <div className="flex items-center gap-4">
-                <div className="p-3 bg-emerald-600/10 rounded-2xl border border-emerald-500/20 text-emerald-500">
-                  <UserCheck size={24} />
+                <div className="p-3 bg-emerald-500/10 rounded-2xl border border-emerald-500/20 text-emerald-500">
+                  <Users size={26} />
                 </div>
                 <div>
-                  <h1 className="text-2xl font-bold text-white tracking-tight">حالة الموظفين</h1>
-                  <p className="text-slate-500 text-[10px] mt-2 font-bold tracking-[0.2em] uppercase">Staff Deployment & Status Records</p>
+                  <h1 className="text-2xl font-extrabold text-white tracking-tight">موظفين الطوارئ</h1>
+                  <p className="text-slate-500 text-sm mt-0.5">إدارة وتتبع موظفي الطوارئ الميدانيين</p>
                 </div>
               </div>
-
-              <div className="flex flex-wrap items-center gap-3 w-full lg:w-auto">
-                {/* البحث */}
-                <div className="relative flex-1 lg:flex-none">
-                  <Search className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500" size={16} />
+              
+              <div className="flex items-center gap-3">
+                <div className="relative">
+                  <Search className="absolute right-3.5 top-3 text-slate-500" size={18} />
                   <input 
-                    type="text" 
-                    placeholder="بحث عن موظف..." 
+                    placeholder="ابحث باسم الموظف أو البريد..." 
                     value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    className="bg-[#080808] border border-slate-800 rounded-lg py-2 pr-10 pl-4 w-full lg:w-64 focus:border-emerald-500 outline-none text-xs transition-all"
+                    className="w-64 bg-[#0c0c0c] border border-slate-800 focus:border-slate-700 p-2.5 pr-10 rounded-xl text-sm text-white placeholder-slate-600 focus:outline-none transition-colors" 
+                    onChange={(e) => setSearchTerm(e.target.value)} 
                   />
                 </div>
-
-                {/* فلتر الحالة */}
-                <div className="flex items-center gap-2 bg-[#080808] border border-slate-800 rounded-lg px-3 py-1.5">
-                  <Filter size={14} className="text-slate-500" />
-                  <select 
-                    value={statusFilter}
-                    onChange={(e) => setStatusFilter(e.target.value)}
-                    className="bg-transparent border-none outline-none text-xs text-slate-300 cursor-pointer"
-                  >
-                    <option value="all">كل الحالات</option>
-                    <option value="متاح">متاح</option>
-                    <option value="مشغول">مشغول</option>
-                    <option value="في إجازة">في إجازة</option>
-                    <option value="غير متاح">غير متاح</option>
-                  </select>
-                </div>
+                <button 
+                  onClick={fetchEmergencyEmployees} 
+                  className="p-3 bg-[#0c0c0c] border border-slate-800 rounded-xl hover:bg-slate-900 hover:text-white transition-all active:scale-95"
+                  title="تحديث البيانات"
+                >
+                  <RefreshCw size={18} className={loading ? "animate-spin text-emerald-500" : ""} />
+                </button>
+                <button 
+                  onClick={() => setIsModalOpen(true)} 
+                  className="flex items-center gap-2 px-5 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl font-semibold text-sm transition-all shadow-lg active:scale-95"
+                >
+                  <UserPlus size={18} />
+                  إضافة موظف
+                </button>
               </div>
             </div>
 
             {/* الجدول */}
-            <div className="bg-[#050505] border border-slate-800 rounded-xl overflow-hidden shadow-2xl">
-              <table className="w-full text-right text-[13px]">
-                <thead>
-                  <tr className="bg-[#0c0c0c] border-b border-slate-800 text-slate-500 font-bold uppercase tracking-tighter">
-                    <th className="p-4">الموظف / المعرف</th>
-                    <th className="p-4">المسمى الوظيفي</th>
-                    <th className="p-4">القسم / الموقع</th>
-                    <th className="p-4">رقم التواصل</th>
-                    <th className="p-4">الحالة</th>
-                    <th className="p-4 text-center">الإجراء</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-900">
-                  {currentRecords.map((staff) => (
-                    <tr key={staff.id} className="hover:bg-emerald-500/5 transition-colors even:bg-[#080808]/40">
-                      <td className="p-4 font-bold text-slate-200">
-                        <div className="flex flex-col gap-1">
-                          <span>{staff.name}</span>
-                          <span className="text-[10px] text-slate-600 font-mono uppercase tracking-widest">{staff.id}</span>
-                        </div>
-                      </td>
-                      <td className="p-4 text-slate-400">
-                        <div className="flex items-center gap-2">
-                          <Briefcase size={14} className="text-slate-600" />
-                          {staff.position}
-                        </div>
-                      </td>
-                      <td className="p-4 text-slate-400 font-bold">
-                        <div className="flex items-center gap-2">
-                          <MapPin size={14} className="text-emerald-500/60" />
-                          {staff.location}
-                        </div>
-                      </td>
-                      <td className="p-4 font-mono">
-                        <div className="flex flex-col gap-1">
-                          <a href={`tel:${staff.phone}`} className="text-slate-300 hover:text-emerald-500 transition-colors">{staff.phone}</a>
-                          <span className="text-[11px] text-slate-600">{staff.email}</span>
-                        </div>
-                      </td>
-                      <td className="p-4">
-                        <span className={`px-3 py-1 rounded-full text-[11px] font-bold border ${getStatusColor(staff.status)}`}>
-                          {staff.status}
-                        </span>
-                      </td>
-                      <td className="p-4 text-center">
-                        <a href={`mailto:${staff.email}`} className="inline-flex p-2 bg-slate-900 border border-slate-800 rounded-md text-slate-400 hover:text-white hover:bg-emerald-600 transition-all">
-                          <Mail size={16} />
-                        </a>
-                      </td>
+            <div className="bg-[#050505] border border-slate-900 rounded-2xl overflow-hidden shadow-2xl">
+              <div className="overflow-x-auto">
+                <table className="w-full text-right border-collapse">
+                  <thead className="bg-[#090909] border-b border-slate-900 text-slate-400 text-xs font-bold uppercase tracking-wider">
+                    <tr>
+                      <th className="p-5">الموظف المسؤول</th>
+                      <th className="p-5">البريد الإلكتروني</th>
+                      <th className="p-5">اسم المستخدم</th>
+                      <th className="p-5">رقم الهاتف</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody className="divide-y divide-slate-900/60">
+                    {loading ? (
+                      <tr>
+                        <td colSpan="4" className="p-20 text-center">
+                          <div className="flex flex-col items-center gap-3 text-slate-500">
+                            <Loader2 size={32} className="animate-spin text-emerald-500" />
+                            <span className="text-sm">جاري تحميل الكادر الميداني...</span>
+                          </div>
+                        </td>
+                      </tr>
+                    ) : currentRecords.length > 0 ? (
+                      currentRecords.map((s) => (
+                        <tr key={s.id} className="hover:bg-slate-900/20 transition-colors group">
+                          <td className="p-4 flex items-center gap-3.5">
+                            <div className="relative">
+                              {s.profilePictureUrl ? (
+                                <img 
+                                  src={s.profilePictureUrl} 
+                                  alt={s.fullName} 
+                                  className="w-11 h-11 rounded-xl object-cover ring-1 ring-slate-800 bg-slate-900"
+                                />
+                              ) : (
+                                <div className="w-11 h-11 rounded-xl bg-slate-900 ring-1 ring-slate-800 flex items-center justify-center text-slate-500 group-hover:text-emerald-400 transition-colors">
+                                  <User size={20} />
+                                </div>
+                              )}
+                              <div className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-emerald-500 rounded-full ring-2 ring-[#050505]"></div>
+                            </div>
+                            <span className="font-bold text-white group-hover:text-emerald-400 transition-colors">{s.fullName}</span>
+                          </td>
+                          <td className="p-4 text-slate-400 font-medium text-sm font-mono">{s.email || '—'}</td>
+                          <td className="p-4 text-slate-400 font-medium text-sm">{s.userName}</td>
+                          <td className="p-4 font-mono text-sm text-slate-400">{s.phoneNumber || '—'}</td>
+                        </tr>
+                      ))
+                    ) : (
+                      <tr>
+                        <td colSpan="4" className="p-16 text-center text-slate-600">
+                          <User size={36} className="mx-auto mb-2 text-slate-800" />
+                          <p className="text-sm">لم يتم العثور على أي موظفي طوارئ تطابق البحث.</p>
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
 
-              {/* الباجينيشن */}
-              <div className="p-4 bg-[#080808] border-t border-slate-900 flex items-center justify-between text-[11px]">
-                <span className="text-slate-500 font-bold uppercase tracking-widest">إجمالي الموظفين: {filteredStaff.length}</span>
-                <div className="flex items-center gap-2">
-                  <button onClick={() => setCurrentPage(p => Math.max(1, p - 1))} className="p-1.5 bg-slate-900 rounded border border-slate-800 text-slate-400 hover:text-white disabled:opacity-20 transition-all"><ChevronRight size={16}/></button>
-                  {[...Array(totalPages)].map((_, i) => (
-                    <button
-                      key={i + 1}
-                      onClick={() => setCurrentPage(i + 1)}
-                      className={`w-7 h-7 rounded border transition-all font-bold ${currentPage === i + 1 ? 'bg-emerald-600 border-emerald-500 text-white' : 'border-slate-800 text-slate-500 hover:bg-slate-800'}`}
-                    >
-                      {i + 1}
-                    </button>
-                  ))}
-                  <button onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))} className="p-1.5 bg-slate-900 rounded border border-slate-800 text-slate-400 hover:text-white disabled:opacity-20 transition-all"><ChevronLeft size={16}/></button>
+              {/* أزرار الصفحات الباجينيشن */}
+              <div className="p-4 bg-[#080808] border-t border-slate-900 flex justify-between items-center text-sm">
+                <span className="text-xs text-slate-500">
+                  عرض <span className="text-slate-300 font-medium">{currentRecords.length}</span> من أصل <span className="text-slate-300 font-medium">{filteredStaff.length}</span> موظف
+                </span>
+                <div className="flex items-center gap-1.5">
+                  <button 
+                    disabled={currentPage === 1 || loading} 
+                    onClick={() => setCurrentPage(p => p - 1)} 
+                    className="p-2 bg-[#121212] border border-slate-800 hover:border-slate-700 rounded-xl disabled:opacity-40 transition-all text-slate-400 hover:text-white"
+                  >
+                    <ChevronRight size={18}/>
+                  </button>
+                  <span className="px-3 text-xs text-slate-400 font-medium">الصفحة {currentPage} من {totalPages}</span>
+                  <button 
+                    disabled={currentPage === totalPages || loading} 
+                    onClick={() => setCurrentPage(p => p + 1)} 
+                    className="p-2 bg-[#121212] border border-slate-800 hover:border-slate-700 rounded-xl disabled:opacity-40 transition-all text-slate-400 hover:text-white"
+                  >
+                    <ChevronLeft size={18}/>
+                  </button>
                 </div>
               </div>
             </div>
+
           </div>
         </main>
       </div>
+
+      {/* مودال إضافة الموظف */}
+      {isModalOpen && (
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-md flex items-center justify-center z-50 p-4">
+          <form onSubmit={handleSave} className="bg-[#070707] border border-slate-800 w-full max-w-xl rounded-2xl overflow-hidden shadow-2xl flex flex-col max-h-[90vh]">
+            
+            <div className="p-5 border-b border-slate-900 flex justify-between items-center bg-[#0a0a0a]">
+              <div className="flex items-center gap-2.5">
+                <div className="w-2.5 h-2.5 bg-emerald-500 rounded-full animate-pulse" />
+                <h2 className="text-lg font-bold text-white">تسجيل موظف طوارئ جديد</h2>
+              </div>
+              <button type="button" onClick={handleCloseModal} className="text-slate-500 hover:text-white p-1 hover:bg-slate-900 rounded-lg transition-colors">
+                <X size={20}/>
+              </button>
+            </div>
+
+            <div className="p-6 space-y-6 overflow-y-auto custom-scrollbar">
+              
+              {/* رفع الصورة الشخصية */}
+              <div className="flex flex-col items-center justify-center bg-[#0c0c0c] border border-dashed border-slate-800 rounded-xl p-5 group hover:border-slate-700 transition-colors relative">
+                <input 
+                  type="file" 
+                  id="profile-upload"
+                  accept="image/*" 
+                  className="hidden" 
+                  onChange={handleImageChange} 
+                />
+                <label htmlFor="profile-upload" className="cursor-pointer flex flex-col items-center text-center space-y-2 w-full">
+                  {imagePreview ? (
+                    <div className="relative group">
+                      <img src={imagePreview} alt="Preview" className="w-20 h-20 rounded-2xl object-cover ring-2 ring-emerald-500/30" />
+                      <div className="absolute inset-0 bg-black/40 rounded-2xl opacity-0 group-hover:opacity-100 flex items-center justify-center text-xs text-white transition-opacity">تغيير الصورة</div>
+                    </div>
+                  ) : (
+                    <>
+                      <div className="w-12 h-12 rounded-xl bg-slate-950 flex items-center justify-center text-slate-500 group-hover:text-emerald-500 group-hover:bg-emerald-500/5 transition-all">
+                        <Upload size={20} />
+                      </div>
+                      <div>
+                        <p className="text-sm font-semibold text-slate-300">رفع الصورة الشخصية للموظف</p>
+                        <p className="text-xs text-slate-600 mt-0.5">يدعم JPG, PNG و WebP</p>
+                      </div>
+                    </>
+                  )}
+                </label>
+              </div>
+
+              {/* شبكة توزيع المدخلات */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-1.5">
+                  <label className="text-xs text-slate-400 font-medium">الاسم الكامل</label>
+                  <div className="relative">
+                    <User className="absolute right-3 top-3 text-slate-600" size={16} />
+                    <input required value={formData.fullName} placeholder="الإسم الكامل" className="w-full bg-[#0c0c0c] border border-slate-800 focus:border-emerald-600 p-2.5 pr-9 rounded-xl text-sm text-white focus:outline-none transition-colors" onChange={(e) => setFormData({...formData, fullName: e.target.value})} />
+                  </div>
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="text-xs text-slate-400 font-medium">اسم المستخدم (ID)</label>
+                  <div className="relative">
+                    <User className="absolute right-3 top-3 text-slate-600" size={16} />
+                    <input required value={formData.userName} placeholder="مثل:SalehNoor12" className="w-full bg-[#0c0c0c] border border-slate-800 focus:border-emerald-600 p-2.5 pr-9 rounded-xl text-sm text-white focus:outline-none transition-colors" onChange={(e) => setFormData({...formData, userName: e.target.value})} />
+                  </div>
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="text-xs text-slate-400 font-medium">البريد الإلكتروني</label>
+                  <div className="relative">
+                    <Mail className="absolute right-3 top-3 text-slate-600" size={16} />
+                    <input required type="email" value={formData.email} placeholder="example@gmail.com" className="w-full bg-[#0c0c0c] border border-slate-800 focus:border-emerald-600 p-2.5 pr-9 rounded-xl text-sm text-white focus:outline-none transition-colors" onChange={(e) => setFormData({...formData, email: e.target.value})} />
+                  </div>
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="text-xs text-slate-400 font-medium">رقم الهاتف</label>
+                  <div className="relative">
+                    <Phone className="absolute right-3 top-3 text-slate-600" size={16} />
+                    <input required value={formData.phoneNumber} placeholder="0599000000" className="w-full bg-[#0c0c0c] border border-slate-800 focus:border-emerald-600 p-2.5 pr-9 rounded-xl text-sm font-mono text-white focus:outline-none transition-colors" onChange={(e) => setFormData({...formData, phoneNumber: e.target.value})} />
+                  </div>
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="text-xs text-slate-400 font-medium">المدينة</label>
+                  <div className="relative">
+                    <MapPin className="absolute right-3 top-3 text-slate-600" size={16} />
+                    <input required value={formData.city} placeholder="رام الله" className="w-full bg-[#0c0c0c] border border-slate-800 focus:border-emerald-600 p-2.5 pr-9 rounded-xl text-sm text-white focus:outline-none transition-colors" onChange={(e) => setFormData({...formData, city: e.target.value})} />
+                  </div>
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="text-xs text-slate-400 font-medium">كلمة المرور المؤقتة</label>
+                  <div className="relative">
+                    <Lock className="absolute right-3 top-3 text-slate-600" size={16} />
+                    <input required type="password" value={formData.password} placeholder="••••••••" className="w-full bg-[#0c0c0c] border border-slate-800 focus:border-emerald-600 p-2.5 pr-9 rounded-xl text-sm text-white focus:outline-none transition-colors" onChange={(e) => setFormData({...formData, password: e.target.value})} />
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* الأزرار السفلية */}
+            <div className="p-4 bg-[#0a0a0a] border-t border-slate-900 flex justify-end gap-3">
+              <button type="button" onClick={handleCloseModal} className="px-5 py-2.5 bg-slate-900 text-slate-400 hover:text-white rounded-xl text-sm font-medium transition-colors">إلغاء</button>
+              <button type="submit" disabled={submitting} className="flex items-center justify-center gap-2 px-6 py-2.5 bg-emerald-600 hover:bg-emerald-500 disabled:bg-emerald-700 text-white rounded-xl text-sm font-bold min-w-[130px]">
+                {submitting ? (
+                  <>
+                    <Loader2 size={16} className="animate-spin" />
+                    جاري الحفظ...
+                  </>
+                ) : (
+                  "اعتماد ومزامنة"
+                )}
+              </button>
+            </div>
+          </form>
+        </div>
+      )}
     </div>
   );
 };
 
-export default EmergencyStaffStatus
+export default EmergencyStaffStatus;

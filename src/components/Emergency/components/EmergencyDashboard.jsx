@@ -5,7 +5,6 @@ import { ChevronRight, ChevronLeft } from 'lucide-react';
 import EmergencySidebar from './EmergencySidebar';
 import EmergencyMap from './EmergencyMap';
 import ConnectionAlert from './ConnectionAlert';
-import WeatherPanel from './EmergencyReportsPanel';
 
 const EmergencyDashboard = () => {
   const [isRightSidebarOpen, setIsRightSidebarOpen] = useState(true);
@@ -82,31 +81,7 @@ const EmergencyDashboard = () => {
         {/* --------------------------------------------------------- */}
         {/* 3. لوحة الطقس اليسرى (WeatherPanel) */}
         {/* --------------------------------------------------------- */}
-        <div className="relative flex shrink-0 z-[100]">
-          <button
-            onClick={() => setIsWeatherOpen(!isWeatherOpen)}
-            className="absolute -right-4 top-1/2 -translate-y-1/2 w-4 h-20 bg-[#1e293b] hover:bg-blue-600 border border-[#334155] flex items-center justify-center cursor-pointer z-[110] rounded-r-md transition-all group shadow-xl"
-          >
-            {isWeatherOpen ? 
-              <ChevronLeft size={14} className="text-white group-hover:scale-125 transition-transform" /> : 
-              <ChevronRight size={14} className="text-white group-hover:scale-125 transition-transform" />
-            }
-          </button>
-
-          <motion.div 
-            animate={{ 
-              width: isWeatherOpen ? 300 : 0,
-              opacity: isWeatherOpen ? 1 : 0
-            }}
-            transition={{ duration: 0.4, ease: "circOut" }}
-            onAnimationComplete={refreshMap} // تحديث الخريطة أيضاً عند إغلاق/فتح الطقس
-            className="overflow-hidden bg-[#0a0a0a] border-r border-[#1e293b]"
-          >
-            <div className="w-[300px] h-full">
-               <WeatherPanel selectedCoords={selectedLocation} />
-            </div>
-          </motion.div>
-        </div>
+    
 
       </div>
       

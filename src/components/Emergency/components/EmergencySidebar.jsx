@@ -25,20 +25,19 @@ const EmergencySidebar = ({ isOpen }) => {
       subLinks: [
         { name: 'الوحدات الميدانية', path: '/FieldUnitsView', icon: <Ambulance size={16} /> },
         { name: 'إضافة وحدة ميدانية', path: '/AddFieldUnitView', icon: <PlusCircle size={16} className="text-blue-400" /> }, 
-        { name: 'المراكز الطبية والمستشفيات', path: '/hospitals', icon: <Hospital size={16} /> },
       ]
     },
-    { id: '02', path: '/EmergencyCenters', name: 'مراكز الطوارئ', icon: <MapIcon size={22} /> },
     { id: '05', path: '/MedicalHistoryView', name: 'السجل الطبي العام', icon: <Activity size={22} className="text-red-500" /> },
     { 
       id: '03', 
-      name: 'مركز الأرشيف', 
+      name: 'أقسام الطوارئ والمستشفيات', 
       icon: <FileText size={22} />,
       isDropdown: true,
       subLinks: [
-        { name: 'أرشيف المكالمات', path: '/CallArchiveView', icon: <Phone size={16} /> },
-        { name: 'أرشيف الرسائل', path: '/MessageArchiveView', icon: <MessageSquare size={16} /> },
-        { name: 'الأرشيف العام', path: '/archive', icon: <History size={16} /> },
+            { id: '02', path: '/EmergencyCenters', name: 'مراكز الطوارئ', icon: <MapIcon size={22} /> },
+
+        { name: 'إضافة مركز طوارئ ', path: '/CreateEmergencyCenter'},
+        
       ]
     },
     { id: '06', path: '/EmergencyStaffStatus', name: 'حالة الموظفين', icon: <Radio size={22} /> },
@@ -56,7 +55,7 @@ const EmergencySidebar = ({ isOpen }) => {
   }, [location.pathname]);
 
   const handleLogout = () => {
-    window.location.href = "/";
+    window.location.href = "/login";
   };
 
   const toggleSubMenu = (id) => {
